@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sports Shop POS & Inventory</title>
+    
+    <!-- PWA Manifest & App Tags -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Trailing-slash Canonicalizer for GitHub Pages -->
+    <script>
+        if (!location.pathname.endsWith('/') && !location.pathname.endsWith('.html') && !location.pathname.includes('.')) {
+            location.replace(location.pathname + '/' + location.search + location.hash);
+        }
+    </script>
+
+    <!-- Early PWA Capture & Service Worker Registration -->
+    <script>
+        window.deferredPrompt = null;
+        window.isPWAInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        // Capture Chrome's native beforeinstallprompt event immediately
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPrompt = e;
+            console.log('✅ PWA: Native beforeinstallprompt captured successfully!');
+            
+            // If user clicked Install while waiting, trigger prompt immediately!
+            if (window.isWaitingForPWAInstall && typeof window.executePWAInstall === 'function') {
+                window.executePWAInstall();
+            } else if (typeof window.checkAndShowBanner === 'function') {
+                window.checkAndShowBanner();
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            window.deferredPrompt = null;
+            window.isPWAInstalled = true;
+            window.isWaitingForPWAInstall = false;
+            console.log('✅ PWA: App installed on device!');
+            if (typeof window.showToast === 'function') {
+                window.showToast("Sports Shop App အား Home Screen တွင် အောင်မြင်စွာ သွင်းယူပြီးပါပြီ!");
+            }
+            if (typeof window.checkAndShowBanner === 'function') {
+                window.checkAndShowBanner();
+            }
+            const modal = document.getElementById('pwa-guide-modal');
+            if (modal) modal.classList.add('hidden');
+        });
+
+        // Register Service Worker immediately
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
+                    .then(reg => {
+                        console.log('✅ PWA: ServiceWorker active, scope:', reg.scope);
+                        reg.update();
+                    })
+                    .catch(err => console.warn('PWA: ServiceWorker error:', err));
+            });
+        }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-color: #f3f4f6;
+            --text-color: #1f2937;
+            --panel-bg: #ffffff;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --border-color: #e5e7eb;
+        }
+
+        body.theme-dark {
+            --bg-color: #111827;
+            --text-color: #f9fafb;
+            --panel-bg: #1f2937;
+            --primary: #60a5fa;
+            --primary-hover: #3b82f6;
+            --border-color: #374151;
+        }
+
+        body.theme-blue {
+            --bg-color: #0f172a;
+            --text-color: #e0f2fe;
+            --panel-bg: #1e293b;
+            --primary: #38bdf8;
+            --primary-hover: #0ea5e9;
+            --border-color: #334155;
+        }
+
+        body.theme-orange {
+            --bg-color: #fff7ed;
+            --text-color: #7c2d12;
+            --panel-bg: #ffedd5;
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --border-color: #fed7aa;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #fff;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .text-primary { color: var(--primary); }
+        .border-primary { border-color: var(--primary); }
+        .input-field {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-modal, #receipt-modal * { visibility: visible; }
+            #receipt-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+            }
+            .no-print { display: none !important; }
+        }
+
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            max-width: 90vw;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 12px;
+            padding: 12px 20px;
+            position: fixed;
+            z-index: 9999;
+            left: 50%;
+            bottom: 80px;
+            transform: translateX(-50%);
+            opacity: 0;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            transition: opacity 0.3s, visibility 0.3s;
+            word-break: break-word;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .touch-action-manipulation {
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row theme-light select-none">
+
+    <!-- Toast Notification -->
+    <div id="toast">Message goes here</div>
+
+    <!-- Login View -->
+    <div id="login-view" class="flex-1 flex items-center justify-center panel z-50 absolute inset-0 p-4">
+        <div class="panel p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md">
+            <div class="text-center mb-6">
+                <i class="fas fa-running text-4xl text-primary mb-2"></i>
+                <h1 class="text-2xl font-bold">Sports Shop POS</h1>
+                <p class="text-sm opacity-70">Login to account</p>
+            </div>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" id="email" required class="input-field w-full px-4 py-2.5 rounded-xl" placeholder="admin@shop.com" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" required class="input-field w-full px-4 py-2.5 rounded-xl pr-10" placeholder="••••••••" autocomplete="current-password">
+                        <button type="button" onclick="window.togglePasswordVisibility('password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 text-sm focus:outline-none" title="Show/Hide password">
+                            <i class="fas fa-eye" id="toggle-pwd-icon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="login-error-msg" class="hidden text-xs text-red-600 bg-red-50 dark:bg-red-950/40 p-2.5 rounded-xl border border-red-200 dark:border-red-900 leading-relaxed"></div>
+                <button type="submit" id="btn-login-submit" class="btn-primary w-full py-3 rounded-xl font-medium shadow-md mt-2 flex items-center justify-center gap-2 active:scale-98">
+                    <span id="login-spinner" class="hidden"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span id="login-btn-text">Login</span>
+                </button>
+
+                <div class="relative flex py-1 items-center">
+                    <div class="flex-grow border-t border-[var(--border-color)]"></div>
+                    <span class="flex-shrink mx-3 text-xs opacity-50">OR</span>
+                    <div class="flex-grow border-t border-[var(--border-color)]"></div>
+                </div>
+
+                <button type="button" id="btn-google-login" class="w-full py-2.5 rounded-xl border border-[var(--border-color)] hover:bg-[var(--border-color)] font-medium text-xs md:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98">
+                    <i class="fab fa-google text-red-500"></i>
+                    <span id="lbl-btn-google">Sign in with Google (Gmail)</span>
+                </button>
+
+                <div class="text-center mt-3">
+                    <p class="text-sm opacity-70">New here? <a href="#" id="show-register" class="text-primary font-medium hover:underline">Create Account</a></p>
+                </div>
+            </form>
+
+            <form id="register-form" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" id="reg-email" required class="input-field w-full px-4 py-2.5 rounded-xl" placeholder="admin@shop.com" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="reg-password" required class="input-field w-full px-4 py-2.5 rounded-xl pr-10" placeholder="••••••••" autocomplete="new-password">
+                        <button type="button" onclick="window.togglePasswordVisibility('reg-password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 text-sm focus:outline-none" title="Show/Hide password">
+                            <i class="fas fa-eye" id="toggle-reg-pwd-icon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="reg-error-msg" class="hidden text-xs text-red-600 bg-red-50 dark:bg-red-950/40 p-2.5 rounded-xl border border-red-200 dark:border-red-900 leading-relaxed"></div>
+                <button type="submit" id="btn-reg-submit" class="btn-primary w-full py-3 rounded-xl font-medium shadow-md mt-2 flex items-center justify-center gap-2 active:scale-98">
+                    <span id="reg-spinner" class="hidden"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span id="reg-btn-text">Register</span>
+                </button>
+                <div class="text-center mt-3">
+                    <p class="text-sm opacity-70">Already have account? <a href="#" id="show-login" class="text-primary font-medium hover:underline">Login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Structure -->
+    <div id="app-view" class="hidden flex-1 flex flex-col md:flex-row h-full w-full overflow-hidden">
+        
+        <!-- Desktop Sidebar -->
+        <aside class="hidden md:flex w-64 panel flex-col h-full shadow-lg z-20">
+            <div class="p-6 flex items-center gap-3 border-b border-[var(--border-color)]">
+                <i class="fas fa-shopping-cart text-2xl text-primary"></i>
+                <h1 id="sidebar-shop-name" class="font-bold text-xl truncate">Shop Name</h1>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <button onclick="switchTab('pos')" class="nav-btn-desk w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--border-color)] transition-colors active-tab bg-[var(--border-color)] text-primary" data-target="pos">
+                    <i class="fas fa-calculator w-6"></i>
+                    <span class="font-medium" id="nav-pos">POS</span>
+                </button>
+                <button onclick="switchTab('inventory')" class="nav-btn-desk w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--border-color)] transition-colors" data-target="inventory">
+                    <i class="fas fa-box-open w-6"></i>
+                    <span class="font-medium" id="nav-inventory">Inventory</span>
+                </button>
+                <button onclick="switchTab('history')" class="nav-btn-desk w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--border-color)] transition-colors" data-target="history">
+                    <i class="fas fa-history w-6"></i>
+                    <span class="font-medium" id="nav-history">History</span>
+                </button>
+                <button onclick="switchTab('dashboard')" class="nav-btn-desk w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--border-color)] transition-colors" data-target="dashboard">
+                    <i class="fas fa-chart-pie w-6"></i>
+                    <span class="font-medium" id="nav-dashboard">Dashboard</span>
+                </button>
+                <button onclick="switchTab('settings')" class="nav-btn-desk w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--border-color)] transition-colors" data-target="settings">
+                    <i class="fas fa-cog w-6"></i>
+                    <span class="font-medium" id="nav-settings">Settings</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-[var(--border-color)] space-y-2">
+                <button id="btn-desktop-install-sidebar" onclick="triggerPWAInstall()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors font-medium">
+                    <i class="fas fa-download w-6"></i>
+                    <span id="lbl-sidebar-install">Install App</span>
+                </button>
+                <button onclick="toggleLanguage()" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--border-color)] transition-colors">
+                    <i class="fas fa-language w-6 text-primary"></i>
+                    <span class="font-medium" id="nav-lang">EN / မြန်မာ</span>
+                </button>
+                <button id="logout-btn" class="w-full flex items-center gap-3 p-3 rounded-xl text-red-500 hover:bg-red-500 hover:bg-opacity-10 transition-colors">
+                    <i class="fas fa-sign-out-alt w-6"></i>
+                    <span class="font-medium" id="nav-logout">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-full overflow-hidden relative pb-16 md:pb-0">
+            
+            <!-- Mobile Top Bar -->
+            <header class="md:hidden panel px-4 py-3 border-b border-[var(--border-color)] flex justify-between items-center z-10">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-running text-primary text-xl"></i>
+                    <span id="mobile-shop-name" class="font-bold text-base truncate max-w-[130px]">Sports Shop</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="btn-mobile-install-header" onclick="triggerPWAInstall()" class="px-2.5 py-1 rounded-lg btn-primary text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-transform">
+                        <i class="fas fa-download text-[11px]"></i> <span>Install</span>
+                    </button>
+                    <button onclick="toggleLanguage()" class="px-2 py-1 rounded-lg border border-[var(--border-color)] text-xs font-semibold">EN/မြန်မာ</button>
+                    <button onclick="signOutAuth()" class="text-red-500 p-1.5"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+
+            <!-- POS Section -->
+            <section id="pos-section" class="tab-content h-full flex flex-col md:flex-row overflow-hidden relative">
+                <!-- Products Grid -->
+                <div class="flex-1 p-3 md:p-4 flex flex-col overflow-hidden">
+                    <div class="flex gap-2 mb-3 overflow-x-auto pb-1 no-scrollbar" id="pos-category-filters">
+                        <button class="px-4 py-1.5 rounded-full btn-primary text-xs md:text-sm whitespace-nowrap">All</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto pr-1 pb-24 md:pb-2">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" id="pos-product-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Floating Mobile Cart Bar -->
+                <div class="md:hidden fixed bottom-16 left-0 right-0 p-3 bg-gradient-to-t from-[var(--bg-color)] via-[var(--bg-color)] to-transparent z-20">
+                    <div onclick="toggleMobileCart(true)" class="btn-primary rounded-2xl p-3 px-4 shadow-xl flex items-center justify-between cursor-pointer active:scale-95 transition-transform">
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <i class="fas fa-shopping-basket text-xl"></i>
+                                <span class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold" id="mobile-cart-badge">0</span>
+                            </div>
+                            <span class="font-medium text-sm" id="lbl-cart-items-count">0 items</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-lg" id="mobile-cart-total">Ks 0</span>
+                            <span class="bg-white/20 px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1">
+                                <span id="lbl-view-cart">Cart</span> <i class="fas fa-chevron-up"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cart Panel / Slide-up on Mobile -->
+                <div class="w-full md:w-80 lg:w-96 panel border-l border-[var(--border-color)] flex flex-col h-full z-40 fixed md:relative inset-x-0 bottom-0 top-0 md:top-auto translate-y-full md:translate-y-0 transition-transform duration-300 ease-in-out" id="cart-panel">
+                    <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleMobileCart(false)" class="md:hidden p-2 -ml-2 text-gray-500"><i class="fas fa-arrow-left text-lg"></i></button>
+                            <h2 class="text-lg md:text-xl font-bold" id="lbl-current-order">Current Order</h2>
+                        </div>
+                        <span class="bg-primary text-white text-xs px-2.5 py-1 rounded-full font-semibold" id="cart-count">0 items</span>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="cart-items">
+                        <div class="text-center opacity-50 py-12" id="lbl-cart-empty">Cart is empty</div>
+                    </div>
+
+                    <div class="p-4 border-t border-[var(--border-color)] bg-[var(--panel-bg)] shadow-inner">
+                        <div class="flex justify-between font-bold text-lg md:text-xl mb-4">
+                            <span id="lbl-total">Total</span>
+                            <span id="cart-total" class="text-primary">Ks 0</span>
+                        </div>
+                        <button onclick="checkout()" class="btn-primary w-full py-3.5 rounded-xl font-bold text-base md:text-lg shadow-lg flex items-center justify-center gap-2 active:scale-98 transition-transform">
+                            <i class="fas fa-check-circle"></i> <span id="lbl-checkout">Checkout</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Inventory Section -->
+            <section id="inventory-section" class="tab-content hidden h-full p-4 md:p-8 overflow-y-auto">
+                <div class="flex justify-between items-center mb-4 md:mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold" id="title-inventory">Inventory Management</h2>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Add Product Form -->
+                    <div class="lg:col-span-1 panel p-5 md:p-6 rounded-2xl shadow-sm h-fit">
+                        <h3 class="font-bold text-base md:text-lg mb-4 border-b border-[var(--border-color)] pb-2" id="title-add-product">Add New Product</h3>
+                        <form id="add-product-form" class="space-y-3 md:space-y-4">
+                            <div>
+                                <label class="block text-xs md:text-sm font-medium mb-1" id="lbl-prod-name">Product Name</label>
+                                <input type="text" id="prod-name" required class="input-field w-full px-3 py-2.5 rounded-xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs md:text-sm font-medium mb-1" id="lbl-category">Category</label>
+                                <div class="flex gap-2">
+                                    <select id="prod-category" required class="input-field flex-1 px-3 py-2.5 rounded-xl text-sm">
+                                        <!-- Categories populated by JS -->
+                                    </select>
+                                    <button type="button" onclick="openAddCategoryModal()" class="btn-primary px-3 py-2 rounded-xl font-bold flex items-center justify-center" title="Add Category">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button type="button" onclick="openManageCategoryModal()" class="bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-xl text-sm" title="Manage Categories">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 md:gap-4">
+                                <div>
+                                    <label class="block text-[11px] md:text-xs font-medium mb-1" id="lbl-buy-price">Buy (Ks)</label>
+                                    <input type="number" id="prod-buy-price" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] md:text-xs font-medium mb-1" id="lbl-sell-price">Sell (Ks)</label>
+                                    <input type="number" id="prod-price" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] md:text-xs font-medium mb-1" id="lbl-stock">Stock</label>
+                                    <input type="number" id="prod-stock" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary w-full py-2.5 md:py-3 rounded-xl font-medium mt-2 shadow" id="btn-add-product">Add Product</button>
+                        </form>
+                    </div>
+
+                    <!-- Products List -->
+                    <div class="lg:col-span-2 panel rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-3 md:p-4 border-b border-[var(--border-color)] flex flex-wrap gap-2 justify-between items-center bg-opacity-50">
+                            <h3 class="font-bold text-base md:text-lg" id="title-prod-list">Product List</h3>
+                            <input type="text" id="search-inventory" placeholder="Search..." class="input-field px-3 py-1.5 rounded-full text-xs md:text-sm w-36 md:w-48">
+                        </div>
+                        <div class="overflow-x-auto flex-1">
+                            <table class="w-full text-left min-w-[500px]">
+                                <thead class="bg-[var(--border-color)] bg-opacity-20">
+                                    <tr class="opacity-70 text-xs md:text-sm">
+                                        <th class="p-3" id="th-name">Name</th>
+                                        <th class="p-3" id="th-cat">Category</th>
+                                        <th class="p-3" id="th-buy">Buy Price</th>
+                                        <th class="p-3" id="th-sell">Sell Price</th>
+                                        <th class="p-3" id="th-stock">Stock</th>
+                                        <th class="p-3 text-right" id="th-actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-list" class="divide-y divide-[var(--border-color)] text-xs md:text-sm">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section id="history-section" class="tab-content hidden h-full p-4 md:p-8 overflow-y-auto">
+                <div class="flex flex-wrap gap-3 justify-between items-center mb-4 md:mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold" id="title-history">Sales History</h2>
+                    <input type="text" id="search-history" placeholder="Search date, item..." class="input-field px-3 py-1.5 rounded-xl text-xs md:text-sm w-44 md:w-60">
+                </div>
+
+                <div class="panel rounded-2xl shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left min-w-[600px]">
+                            <thead class="bg-[var(--border-color)] bg-opacity-20 text-xs md:text-sm opacity-70">
+                                <tr>
+                                    <th class="p-3" id="th-hist-date">Date & Time</th>
+                                    <th class="p-3" id="th-hist-items">Items Sold</th>
+                                    <th class="p-3" id="th-hist-profit">Profit</th>
+                                    <th class="p-3" id="th-hist-total">Total</th>
+                                    <th class="p-3 text-right" id="th-hist-action">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-list" class="divide-y divide-[var(--border-color)] text-xs md:text-sm">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="tab-content hidden h-full p-4 md:p-8 overflow-y-auto">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6" id="title-dashboard">Dashboard Summary</h2>
+                
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6">
+                    <div class="panel p-4 md:p-6 rounded-2xl shadow-sm border-l-4 border-primary">
+                        <p class="text-xs md:text-sm opacity-70 mb-1" id="lbl-total-sales">Total Sales</p>
+                        <h3 class="text-lg md:text-2xl font-bold truncate" id="dash-total-sales">Ks 0</h3>
+                    </div>
+                    <div class="panel p-4 md:p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
+                        <p class="text-xs md:text-sm opacity-70 mb-1" id="lbl-total-profit">Net Profit</p>
+                        <h3 class="text-lg md:text-2xl font-bold text-green-500 truncate" id="dash-total-profit">Ks 0</h3>
+                    </div>
+                    <div class="panel p-4 md:p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                        <p class="text-xs md:text-sm opacity-70 mb-1" id="lbl-items-sold">Products Sold</p>
+                        <h3 class="text-lg md:text-2xl font-bold" id="dash-items-sold">0</h3>
+                    </div>
+                    <div class="panel p-4 md:p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
+                        <p class="text-xs md:text-sm opacity-70 mb-1" id="lbl-low-stock">Low Stock Alerts</p>
+                        <h3 class="text-lg md:text-2xl font-bold text-red-500" id="dash-low-stock-count">0</h3>
+                    </div>
+                </div>
+
+                <!-- Analysis Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+                    <div class="panel p-4 md:p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold text-sm md:text-base mb-3" id="lbl-chart-sales">Sales Trend (Last 7 Days)</h3>
+                        <div class="relative h-56 md:h-64">
+                            <canvas id="salesBarChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="panel p-4 md:p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold text-sm md:text-base mb-3" id="lbl-chart-category">Sales by Category</h3>
+                        <div class="relative h-56 md:h-64">
+                            <canvas id="categoryPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-3 md:p-4 border-b border-[var(--border-color)] bg-opacity-50">
+                        <h3 class="font-bold text-sm md:text-base"><i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> Low Stock Items (&lt; 5)</h3>
+                    </div>
+                    <div class="p-3 md:p-4 overflow-x-auto">
+                        <table class="w-full text-left text-xs md:text-sm">
+                            <thead>
+                                <tr class="opacity-70 border-b border-[var(--border-color)]">
+                                    <th class="pb-2">Product Name</th>
+                                    <th class="pb-2">Category</th>
+                                    <th class="pb-2 text-right">Current Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="low-stock-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="tab-content hidden h-full p-4 md:p-8 overflow-y-auto">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6" id="title-settings">Application Settings</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <!-- Shop Details -->
+                    <div class="panel p-5 md:p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold text-base md:text-lg mb-3 border-b border-[var(--border-color)] pb-2"><i class="fas fa-store mr-2"></i> Shop Details</h3>
+                        <form id="settings-form" class="space-y-3">
+                            <div>
+                                <label class="block text-xs md:text-sm font-medium mb-1">Dynamic Shop Name</label>
+                                <input type="text" id="setting-shop-name" required class="input-field w-full px-3 py-2.5 rounded-xl text-base font-medium" placeholder="Enter Shop Name">
+                                <p class="text-[11px] opacity-60 mt-1">This name will appear on receipts and navigation.</p>
+                            </div>
+                            <button type="submit" class="btn-primary px-5 py-2.5 rounded-xl font-medium shadow-sm">Save Changes</button>
+                        </form>
+                    </div>
+
+                    <!-- Appearance -->
+                    <div class="panel p-5 md:p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold text-base md:text-lg mb-3 border-b border-[var(--border-color)] pb-2"><i class="fas fa-palette mr-2"></i> Color Theme</h3>
+                        <p class="text-xs md:text-sm opacity-70 mb-3">Choose a theme for the application.</p>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="setTheme('light')" class="p-3 rounded-xl border border-gray-300 bg-white text-gray-900 text-center font-medium text-xs md:text-sm">Light</button>
+                            <button onclick="setTheme('dark')" class="p-3 rounded-xl border border-gray-700 bg-gray-900 text-white text-center font-medium text-xs md:text-sm">Dark</button>
+                            <button onclick="setTheme('blue')" class="p-3 rounded-xl border border-blue-900 bg-slate-900 text-blue-200 text-center font-medium text-xs md:text-sm">Sporty Blue</button>
+                            <button onclick="setTheme('orange')" class="p-3 rounded-xl border border-orange-300 bg-orange-100 text-orange-950 text-center font-medium text-xs md:text-sm">Orange</button>
+                        </div>
+                    </div>
+
+                    <!-- Install App Card -->
+                    <div id="settings-install-card" class="panel p-5 md:p-6 rounded-2xl shadow-sm md:col-span-2 border-2 border-primary/40 bg-gradient-to-r from-primary/5 to-transparent">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white text-xl shadow flex-shrink-0">
+                                    <i class="fas fa-mobile-alt"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-base md:text-lg" id="lbl-sett-install-title">Install Application</h3>
+                                    <p class="text-xs md:text-sm opacity-70" id="lbl-sett-install-desc">ဖုန်း သို့မဟုတ် Laptop မျက်နှာပြင် (Home Screen / Desktop) ပေါ်တွင် App အဖြစ် ထည့်သွင်းအသုံးပြုပါ</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="triggerPWAInstall()" class="btn-primary px-5 py-2.5 rounded-xl font-bold text-sm shadow-md flex items-center gap-2 whitespace-nowrap active:scale-95 transition-transform">
+                                <i class="fas fa-download"></i> <span id="lbl-btn-sett-install">Install Now</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bluetooth Thermal Printer -->
+                    <div class="panel p-5 md:p-6 rounded-2xl shadow-sm md:col-span-2">
+                        <h3 class="font-bold text-base md:text-lg mb-2 border-b border-[var(--border-color)] pb-2 flex items-center gap-2">
+                            <i class="fas fa-print text-primary"></i> Bluetooth Thermal Printer
+                        </h3>
+                        <p class="text-xs md:text-sm opacity-70 mb-3" id="lbl-printer-desc">ချိတ်ဆက်ထားပါက အရောင်းပြီးဆုံးသည်နှင့် စက်မှ ဘောက်ချာ အလိုအလျောက် ထွက်လာပါမည်။ (Chrome Browser သာ)</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="button" onclick="connectBluetoothPrinter()" class="btn-primary px-4 py-2.5 rounded-xl font-medium shadow-sm flex items-center gap-2">
+                                <i class="fab fa-bluetooth-b"></i> <span id="lbl-connect-printer">Connect Printer</span>
+                            </button>
+                            <span id="printer-status" class="text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-950 px-2.5 py-1.5 rounded-lg hidden"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Mobile Bottom Navigation Bar -->
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 panel border-t border-[var(--border-color)] flex justify-around items-center h-16 z-30 shadow-lg">
+            <button onclick="switchTab('pos')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 text-primary active-tab" data-target="pos">
+                <i class="fas fa-calculator text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5" id="nav-mob-pos">POS</span>
+            </button>
+            <button onclick="switchTab('inventory')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="inventory">
+                <i class="fas fa-box-open text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5" id="nav-mob-inv">Inventory</span>
+            </button>
+            <button onclick="switchTab('history')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="history">
+                <i class="fas fa-history text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5" id="nav-mob-hist">History</span>
+            </button>
+            <button onclick="switchTab('dashboard')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="dashboard">
+                <i class="fas fa-chart-pie text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5" id="nav-mob-dash">Stats</span>
+            </button>
+            <button onclick="switchTab('settings')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="settings">
+                <i class="fas fa-cog text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5" id="nav-mob-sett">Settings</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Quick Add Category Modal -->
+    <div id="category-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4">
+        <div class="panel p-6 rounded-2xl shadow-2xl w-full max-w-sm">
+            <h3 class="font-bold text-lg mb-4 border-b border-[var(--border-color)] pb-2" id="lbl-add-quick-cat">Add New Category</h3>
+            <form id="inline-category-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium mb-1">Category Name</label>
+                    <input type="text" id="quick-category-name" required class="input-field w-full px-3 py-2 rounded-xl text-sm" placeholder="e.g. Shoes, Rackets">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeAddCategoryModal()" class="px-4 py-2 rounded-xl border border-[var(--border-color)] text-xs font-medium">Cancel</button>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-xs font-medium">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manage / Delete Categories Modal -->
+    <div id="manage-category-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4">
+        <div class="panel p-6 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
+                <h3 class="font-bold text-lg" id="lbl-manage-cat-title">Manage Categories</h3>
+                <button onclick="closeManageCategoryModal()" class="text-gray-500 hover:text-red-500"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="manage-category-list"></div>
+            <div class="mt-4 pt-3 border-t border-[var(--border-color)] flex justify-end">
+                <button onclick="closeManageCategoryModal()" class="btn-primary px-4 py-2 rounded-xl text-xs font-medium">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receipt-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 no-print">
+        <div class="bg-white text-black p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-sm relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeReceipt()" class="absolute top-4 right-4 text-gray-400 hover:text-black no-print">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <div id="receipt-content"></div>
+            <div class="mt-6 pt-4 border-t border-dashed flex gap-3 no-print">
+                <button onclick="window.print()" class="btn-primary flex-1 py-2.5 rounded-xl font-bold text-sm"><i class="fas fa-print mr-2"></i> Print</button>
+                <button onclick="closeReceipt()" class="bg-gray-100 text-gray-800 flex-1 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto Slide-up Install Banner -->
+    <div id="pwa-auto-banner" class="hidden fixed bottom-20 md:bottom-6 left-3 right-3 md:left-auto md:right-6 md:w-96 panel p-3.5 md:p-4 rounded-2xl shadow-2xl border-2 border-primary z-[9990] flex items-center justify-between gap-3 transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary flex items-center justify-center text-white text-lg md:text-xl shadow flex-shrink-0">
+                <i class="fas fa-running"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-xs md:text-sm leading-tight" id="lbl-banner-title">Sports Shop POS</h4>
+                <p class="text-[11px] opacity-70 mt-0.5" id="lbl-banner-desc">Home Screen တွင် App အဖြစ် သွင်းယူရန်</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button onclick="triggerPWAInstall()" class="btn-primary text-xs px-3.5 py-2 rounded-xl font-bold shadow active:scale-95 transition-transform flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fas fa-download"></i> <span id="lbl-btn-banner-install">Install</span>
+            </button>
+            <button onclick="dismissInstallBanner()" class="text-gray-400 hover:text-gray-600 p-1.5 text-sm" title="Dismiss">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- PWA Step-by-Step Install Guide Modal (Fallback for instant manual install) -->
+    <div id="pwa-guide-modal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+        <div class="panel p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center border-2 border-primary/30 relative">
+            <button onclick="closePWAGuideModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 text-sm">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+            <div class="w-14 h-14 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center text-2xl mb-3 shadow-inner">
+                <i class="fas fa-mobile-alt"></i>
+            </div>
+            <h3 class="font-bold text-base md:text-lg mb-1" id="lbl-modal-guide-title">Home Screen သို့ App သွင်းယူနည်း</h3>
+            <p class="text-xs opacity-70 mb-4" id="lbl-modal-guide-sub">Google Chrome မှတစ်ဆင့် အောက်ပါအဆင့် ၃ ဆင့်အတိုင်း သွင်းယူနိုင်ပါသည်-</p>
+            
+            <div class="space-y-3 text-left text-xs bg-[var(--bg-color)] p-4 rounded-2xl mb-5 border border-[var(--border-color)]">
+                <div class="flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-full btn-primary flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">1</span>
+                    <div>
+                        Chrome ၏ ညာဘက်အပေါ်ထောင့်ရှိ <span class="font-bold text-primary">အစက် ၃ စက် (⋮)</span> ကို နှိပ်ပါ။
+                    </div>
+                </div>
+                <div class="flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-full btn-primary flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">2</span>
+                    <div>
+                        <span class="font-bold text-primary">"Install app"</span> သို့မဟုတ် <span class="font-bold text-primary">"Add to Home screen"</span> (ပင်မမျက်နှာပြင်သို့ ထည့်မည်) ကို ရွေးပါ။
+                    </div>
+                </div>
+                <div class="flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-full btn-primary flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">3</span>
+                    <div>
+                        ပေါ်လာသော Dialog တွင် <span class="font-bold text-primary">"Install" (သွင်းမည်)</span> ကို နှိပ်လိုက်ပါက Home Screen ပေါ်သို့ တိုက်ရိုက် ရောက်ရှိသွားပါမည်!
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" onclick="closePWAGuideModal()" class="btn-primary w-full py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform" id="lbl-btn-guide-ok">
+                နားလည်ပါပြီ (OK)
+            </button>
+        </div>
+    </div>
+
+
+
+    <!-- Floating AI Assistant Button -->
+    <button id="ai-chat-btn" onclick="toggleAIChat()" class="fixed bottom-20 md:bottom-8 right-4 md:right-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white w-12 h-12 md:w-14 md:h-14 rounded-full shadow-2xl flex items-center justify-center text-xl z-[9980] hover:scale-105 active:scale-95 transition-all">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <!-- AI Chat Window -->
+    <div id="ai-chat-window" class="hidden fixed bottom-20 md:bottom-24 right-3 md:right-8 w-[94vw] sm:w-96 panel rounded-2xl shadow-2xl border border-[var(--border-color)] z-[9985] flex flex-col h-[460px] max-h-[75vh] overflow-hidden">
+        <div class="p-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-between items-center shadow">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-robot text-lg"></i>
+                <div>
+                    <h4 class="font-bold text-sm">AI Shop Assistant</h4>
+                    <span class="text-[10px] opacity-80 block">စမတ် အရောင်းလက်ထောက်</span>
+                </div>
+            </div>
+            <button onclick="toggleAIChat()" class="text-white hover:opacity-80 p-1">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div id="ai-messages" class="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs">
+            <div class="bg-[var(--bg-color)] p-2.5 rounded-xl rounded-tl-none max-w-[85%] leading-relaxed border border-[var(--border-color)]">
+                မင်္ဂလာပါခင်ဗျာ! ကျွန်တော်က အားကစားဆိုင်ရဲ့ AI Assistant ဖြစ်ပါတယ်။ အရောင်းစာရင်း၊ အမြတ်ငွေ၊ ပစ္စည်းလက်ကျန် အခြေအနေတွေကို မေးမြန်းနိုင်ပါတယ်။
+            </div>
+        </div>
+
+        <div class="px-2.5 py-1.5 flex gap-1.5 overflow-x-auto no-scrollbar border-t border-[var(--border-color)] bg-opacity-30">
+            <button onclick="sendQuickPrompt('ယနေ့ အရောင်းအခြေအနေ ဘယ်လိုရှိလဲ?')" class="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full whitespace-nowrap hover:bg-primary/20">📊 ယနေ့အရောင်း</button>
+            <button onclick="sendQuickPrompt('လက်ကျန်နည်းနေတဲ့ ပစ္စည်းတွေ ရှိလား?')" class="text-[10px] bg-red-500/10 text-red-500 px-2.5 py-1 rounded-full whitespace-nowrap hover:bg-red-500/20">⚠️ ပစ္စည်းပြတ်လပ်မှု</button>
+            <button onclick="sendQuickPrompt('စုစုပေါင်း အမြတ်ငွေ ဘယ်လောက်ရထားလဲ?')" class="text-[10px] bg-green-500/10 text-green-500 px-2.5 py-1 rounded-full whitespace-nowrap hover:bg-green-500/20">💰 စုစုပေါင်းအမြတ်</button>
+        </div>
+
+        <form id="ai-chat-form" class="p-2 border-t border-[var(--border-color)] flex gap-2">
+            <input type="text" id="ai-input" placeholder="AI အား မေးမြန်းလိုသည်ကို ရိုက်ပါ..." class="input-field flex-1 px-3 py-2 rounded-xl text-xs" required autocomplete="off">
+            <button type="submit" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Firebase SDK & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDcJCZkUdm6A8mEZpCJxnTUDW-l5MUj-Ao",
+            authDomain: "sport-market-bebbd.firebaseapp.com",
+            projectId: "sport-market-bebbd",
+            storageBucket: "sport-market-bebbd.firebasestorage.app",
+            messagingSenderId: "893993300910",
+            appId: "1:893993300910:web:c71bc8abaa79f0ca044e3f",
+            measurementId: "G-WTHYG7SQ32"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // App States
+        let currentUser = null;
+        let shopName = "My Sports Shop";
+        let products = [];
+        let categories = [];
+        let sales = [];
+        let cart = [];
+        let unsubscribes = [];
+
+        let currentLang = localStorage.getItem('sportsshop_lang') || 'en';
+        let salesChartInstance = null;
+        let categoryChartInstance = null;
+
+        const i18n = {
+            en: {
+                'nav-pos': 'POS', 'nav-inventory': 'Inventory', 'nav-history': 'History', 'nav-dashboard': 'Dashboard', 'nav-settings': 'Settings', 'nav-lang': 'EN / မြန်မာ', 'nav-logout': 'Logout',
+                'nav-mob-pos': 'POS', 'nav-mob-inv': 'Inventory', 'nav-mob-hist': 'History', 'nav-mob-dash': 'Stats', 'nav-mob-sett': 'Settings',
+                'title-dashboard': 'Dashboard Summary', 'lbl-total-sales': 'Total Sales', 'lbl-total-profit': 'Net Profit', 'lbl-items-sold': 'Products Sold', 'lbl-low-stock': 'Low Stock Alerts',
+                'lbl-chart-sales': 'Sales Trend (Last 7 Days)', 'lbl-chart-category': 'Sales by Category',
+                'title-inventory': 'Inventory Management', 'title-add-product': 'Add New Product', 'lbl-prod-name': 'Product Name', 'lbl-category': 'Category',
+                'lbl-buy-price': 'Buy (Ks)', 'lbl-sell-price': 'Sell (Ks)', 'lbl-stock': 'Stock Qty', 'btn-add-product': 'Add Product',
+                'title-prod-list': 'Product List', 'th-name': 'Name', 'th-cat': 'Category', 'th-buy': 'Buy Price', 'th-sell': 'Sell Price', 'th-stock': 'Stock', 'th-actions': 'Actions',
+                'title-history': 'Sales History', 'th-hist-date': 'Date & Time', 'th-hist-items': 'Items Sold', 'th-hist-profit': 'Profit', 'th-hist-total': 'Total', 'th-hist-action': 'Action',
+                'lbl-current-order': 'Current Order', 'lbl-total': 'Total', 'lbl-checkout': 'Checkout', 'title-settings': 'Application Settings',
+                'lbl-connect-printer': 'Connect Printer', 'lbl-printer-desc': 'Receipts will automatically print after checkout when connected. (Chrome only)',
+                'lbl-add-quick-cat': 'Add New Category', 'lbl-manage-cat-title': 'Manage Categories', 'lbl-view-cart': 'View Cart', 'lbl-sidebar-install': 'Install App', 'lbl-sett-install-title': 'Install Application', 'lbl-sett-install-desc': 'Install as app on Home Screen or Desktop', 'lbl-btn-sett-install': 'Install Now',
+                'lbl-banner-title': 'Sports Shop POS', 'lbl-banner-desc': 'Install as App on your device', 'lbl-btn-banner-install': 'Install'
+            },
+            mm: {
+                'nav-pos': 'အရောင်း', 'nav-inventory': 'ကုန်စည်စာရင်း', 'nav-history': 'အရောင်းမှတ်တမ်း', 'nav-dashboard': 'စာရင်းချုပ်', 'nav-settings': 'ဆက်တင်များ', 'nav-lang': 'EN / မြန်မာ', 'nav-logout': 'ထွက်မည်',
+                'nav-mob-pos': 'အရောင်း', 'nav-mob-inv': 'ကုန်စည်', 'nav-mob-hist': 'မှတ်တမ်း', 'nav-mob-dash': 'စာရင်းချုပ်', 'nav-mob-sett': 'ဆက်တင်',
+                'title-dashboard': 'လုပ်ငန်း စာရင်းချုပ်', 'lbl-total-sales': 'စုစုပေါင်း ရောင်းရငွေ', 'lbl-total-profit': 'အသားတင် အမြတ်ငွေ', 'lbl-items-sold': 'ရောင်းရသည့် အရေအတွက်', 'lbl-low-stock': 'ပစ္စည်းပြတ်လပ်မှု သတိပေးချက်',
+                'lbl-chart-sales': 'ရက်သတ္တပတ်အတွင်း အရောင်းပြမျဉ်း', 'lbl-chart-category': 'အမျိုးအစားအလိုက် ရောင်းရမှု',
+                'title-inventory': 'ကုန်စည် စီမံခန့်ခွဲမှု', 'title-add-product': 'ပစ္စည်းအသစ်ထည့်မည်', 'lbl-prod-name': 'ပစ္စည်းအမည်', 'lbl-category': 'အမျိုးအစား',
+                'lbl-buy-price': 'ဝယ်ရင်း (Ks)', 'lbl-sell-price': 'ရောင်းဈေး (Ks)', 'lbl-stock': 'လက်ကျန်အရေအတွက်', 'btn-add-product': 'ပစ္စည်းထည့်မည်',
+                'title-prod-list': 'ပစ္စည်းများ စာရင်း', 'th-name': 'အမည်', 'th-cat': 'အမျိုးအစား', 'th-buy': 'ဝယ်ရင်းဈေး', 'th-sell': 'ရောင်းဈေး', 'th-stock': 'လက်ကျန်', 'th-actions': 'လုပ်ဆောင်ချက်',
+                'title-history': 'ယခင် အရောင်းမှတ်တမ်းများ', 'th-hist-date': 'ရက်စွဲနှင့် အချိန်', 'th-hist-items': 'ရောင်းချခဲ့သည့် ပစ္စည်းများ', 'th-hist-profit': 'အမြတ်ငွေ', 'th-hist-total': 'စုစုပေါင်း ကျသင့်ငွေ', 'th-hist-action': 'ဘောက်ချာ',
+                'lbl-current-order': 'လက်ရှိ အရောင်းစာရင်း', 'lbl-total': 'စုစုပေါင်း', 'lbl-checkout': 'ငွေရှင်းမည်', 'title-settings': 'ဆက်တင်များ',
+                'lbl-connect-printer': 'စက်ရှာပြီး ချိတ်မည်', 'lbl-printer-desc': 'ချိတ်ဆက်ထားပါက အရောင်းပြီးဆုံးသည်နှင့် စက်မှ ဘောက်ချာ အလိုအလျောက် ထွက်လာပါမည်။ (Chrome သာ)',
+                'lbl-add-quick-cat': 'အမျိုးအစား အသစ်ထည့်ရန်', 'lbl-manage-cat-title': 'အမျိုးအစားများ ပြင်ဆင်/ဖျက်ပစ်ရန်', 'lbl-view-cart': 'ကြည့်မည်', 'lbl-sidebar-install': 'App သွင်းမည်', 'lbl-sett-install-title': 'Application သွင်းယူရန်', 'lbl-sett-install-desc': 'ဖုန်း သို့မဟုတ် Laptop မျက်နှာပြင် ပေါ်တွင် App အဖြစ် သွင်းယူအသုံးပြုပါ', 'lbl-btn-sett-install': 'ယခု သွင်းမည်',
+                'lbl-banner-title': 'Sports Shop POS', 'lbl-banner-desc': 'ဖုန်းထဲသို့ Application သွင်းယူရန်', 'lbl-btn-banner-install': 'သွင်းမည်'
+            }
+        };
+
+        window.toggleLanguage = function() {
+            currentLang = currentLang === 'en' ? 'mm' : 'en';
+            localStorage.setItem('sportsshop_lang', currentLang);
+            applyTranslation();
+            if (salesChartInstance || categoryChartInstance) updateDashboard();
+        };
+
+        function applyTranslation() {
+            const dict = i18n[currentLang];
+            for (const key in dict) {
+                const el = document.getElementById(key);
+                if (el) {
+                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                        el.placeholder = dict[key];
+                    } else {
+                        el.textContent = dict[key];
+                    }
+                }
+            }
+        }
+
+        const toastEl = document.getElementById('toast');
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app-view');
+        
+        window.showToast = function(message) {
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+            setTimeout(() => { toastEl.classList.remove('show'); }, 3500);
+        };
+
+        window.formatCur = function(num) {
+            return "Ks " + Number(num).toLocaleString();
+        };
+
+        window.signOutAuth = function() {
+            signOut(auth);
+        };
+
+        // Authentication Handlers & UI helpers
+        window.togglePasswordVisibility = function(targetId) {
+            const input = document.getElementById(targetId);
+            const icon = document.getElementById(targetId === 'password' ? 'toggle-pwd-icon' : 'toggle-reg-pwd-icon');
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        };
+
+        function showAuthError(msg, target = 'login') {
+            const errEl = document.getElementById(target === 'login' ? 'login-error-msg' : 'reg-error-msg');
+            if (errEl) {
+                errEl.textContent = msg;
+                errEl.classList.remove('hidden');
+            }
+            showToast(msg);
+        }
+
+        function clearAuthErrors() {
+            const lErr = document.getElementById('login-error-msg');
+            const rErr = document.getElementById('reg-error-msg');
+            if (lErr) lErr.classList.add('hidden');
+            if (rErr) rErr.classList.add('hidden');
+        }
+
+        function getFriendlyAuthError(error) {
+            const code = error?.code || '';
+            const msg = error?.message || '';
+
+            if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') {
+                return currentLang === 'mm'
+                    ? 'အီးမေးလ် သို့မဟုတ် စကားဝှက် မှားယွင်းနေပါသည်။ (Invalid Email or Password)'
+                    : 'Invalid email or password. Please verify and try again.';
+            }
+            if (code === 'auth/invalid-email') {
+                return currentLang === 'mm'
+                    ? 'အီးမေးလ် ပုံစံ မမှန်ကန်ပါ။ ဥပမာ- user@gmail.com'
+                    : 'The email address is badly formatted.';
+            }
+            if (code === 'auth/unauthorized-domain') {
+                const host = window.location.hostname || 'domain';
+                return currentLang === 'mm'
+                    ? `Firebase Console > Authentication > Settings > Authorized Domains တွင် Domain/IP (${host}) အား ထည့်သွင်းပေးရန် လိုအပ်ပါသည်။`
+                    : `Domain (${host}) is not authorized in Firebase Console > Authentication > Settings.`;
+            }
+            if (code === 'auth/network-request-failed') {
+                return currentLang === 'mm'
+                    ? 'အင်တာနက် လိုင်းချိတ်ဆက်မှု မရှိပါ သို့မဟုတ် Firebase ဆာဗာနှင့် မချိတ်ဆက်နိုင်ပါ။ (Network Error)'
+                    : 'Network error. Please check your internet connection.';
+            }
+            if (code === 'auth/too-many-requests') {
+                return currentLang === 'mm'
+                    ? 'အကြိမ်များစွာ ကြိုးစားထားသဖြင့် အကောင့်ကို ခေတ္တပိတ်ထားပါသည်။ ခဏစောင့်ပြီးမှ ပြန်လည်ကြိုးစားပါ။'
+                    : 'Access temporarily disabled due to many failed login attempts. Please wait.';
+            }
+            if (code === 'auth/popup-closed-by-user') {
+                return currentLang === 'mm'
+                    ? 'Google Login ပေါ့အပ်ကို ပိတ်လိုက်ပါသည်။ (Popup closed)'
+                    : 'Google Sign-in was cancelled.';
+            }
+            return msg || (currentLang === 'mm' ? 'ဝင်ရောက်မှု မအောင်မြင်ပါ' : 'Authentication failed');
+        }
+
+        document.getElementById('show-register').addEventListener('click', (e) => {
+            e.preventDefault();
+            clearAuthErrors();
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+        });
+
+        document.getElementById('show-login').addEventListener('click', (e) => {
+            e.preventDefault();
+            clearAuthErrors();
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+        });
+
+        async function handleLogin() {
+            clearAuthErrors();
+            const email = (document.getElementById('email').value || '').trim().toLowerCase();
+            const password = document.getElementById('password').value || '';
+            const btn = document.getElementById('btn-login-submit');
+            const spinner = document.getElementById('login-spinner');
+            const text = document.getElementById('login-btn-text');
+
+            if (!email || !password) {
+                showAuthError(currentLang === 'mm' ? 'ကျေးဇူးပြု၍ Email နှင့် Password ရိုက်ထည့်ပါ' : 'Please enter email and password', 'login');
+                return;
+            }
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            text.textContent = currentLang === 'mm' ? 'ဝင်ရောက်နေသည်...' : 'Logging in...';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast(currentLang === 'mm' ? 'အောင်မြင်စွာ ဝင်ရောက်ပြီးပါပြီ!' : 'Logged in successfully!');
+            } catch (error) {
+                console.error('Login Error:', error);
+                showAuthError(getFriendlyAuthError(error), 'login');
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                text.textContent = currentLang === 'mm' ? 'ဝင်မည်' : 'Login';
+            }
+        }
+
+        async function handleRegister() {
+            clearAuthErrors();
+            const email = (document.getElementById('reg-email').value || '').trim().toLowerCase();
+            const password = document.getElementById('reg-password').value || '';
+            const btn = document.getElementById('btn-reg-submit');
+            const spinner = document.getElementById('reg-spinner');
+            const text = document.getElementById('reg-btn-text');
+
+            if (!email || !password) {
+                showAuthError(currentLang === 'mm' ? 'ကျေးဇူးပြု၍ Email နှင့် Password ရိုက်ထည့်ပါ' : 'Please enter email and password', 'register');
+                return;
+            }
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            text.textContent = currentLang === 'mm' ? 'စာရင်းသွင်းနေသည်...' : 'Registering...';
+
+            try {
+                const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, 'users', userCred.user.uid), { email: email, role: 'admin' }, { merge: true });
+                showToast(currentLang === 'mm' ? 'အကောင့်ဖွင့်ပြီး ဝင်ရောက်ပြီးပါပြီ!' : 'Account created & logged in!');
+            } catch (error) {
+                console.error('Register Error:', error);
+                showAuthError(getFriendlyAuthError(error), 'register');
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                text.textContent = currentLang === 'mm' ? 'စာရင်းသွင်းမည်' : 'Register';
+            }
+        }
+
+        async function handleGoogleLogin() {
+            clearAuthErrors();
+            const btn = document.getElementById('btn-google-login');
+            if (!btn) return;
+            btn.disabled = true;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Connecting...</span>`;
+
+            try {
+                const provider = new GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                await signInWithPopup(auth, provider);
+                showToast(currentLang === 'mm' ? 'Google ဖြင့် အောင်မြင်စွာ ဝင်ရောက်ပြီးပါပြီ!' : 'Logged in with Google successfully!');
+            } catch (error) {
+                console.error('Google Login Error:', error);
+                showAuthError(getFriendlyAuthError(error), 'login');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        // Form submit handlers (handles both click and mobile keyboard Enter/Go)
+        const loginFormEl = document.getElementById('login-form');
+        if (loginFormEl) {
+            loginFormEl.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleLogin();
+            });
+        }
+
+        const regFormEl = document.getElementById('register-form');
+        if (regFormEl) {
+            regFormEl.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleRegister();
+            });
+        }
+
+        const googleLoginBtn = document.getElementById('btn-google-login');
+        if (googleLoginBtn) {
+            googleLoginBtn.addEventListener('click', handleGoogleLogin);
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', signOutAuth);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                try {
+                    const uRef = doc(db, 'users', user.uid);
+                    const uSnap = await getDoc(uRef);
+                    if (!uSnap.exists()) {
+                        await setDoc(uRef, { email: user.email, role: 'admin' }, { merge: true });
+                    }
+                } catch (e) {
+                    console.warn("Auto admin check:", e);
+                }
+
+                loginView.classList.add('hidden');
+                appView.classList.remove('hidden');
+                loadData();
+                loadLocalTheme();
+                applyTranslation();
+                
+                checkAndShowBanner();
+            } else {
+                currentUser = null;
+                loginView.classList.remove('hidden');
+                appView.classList.add('hidden');
+                clearData();
+                checkAndShowBanner();
+            }
+        });
+
+        // Data Streams
+        async function loadData() {
+            if (!currentUser) return;
+            try {
+                const unsubSettings = onSnapshot(doc(db, 'settings', 'shop_info'), (docSnap) => {
+                    if (docSnap.exists()) {
+                        shopName = docSnap.data().name || "My Sports Shop";
+                    }
+                    updateShopNameUI();
+                });
+                unsubscribes.push(unsubSettings);
+
+                const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+                    categories = [];
+                    snapshot.forEach(doc => categories.push({ id: doc.id, ...doc.data() }));
+                    renderCategories();
+                    renderManageCategoriesList();
+                });
+                unsubscribes.push(unsubCategories);
+
+                const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+                    products = [];
+                    snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+                    renderProductsList();
+                    renderPOSProducts();
+                    updateDashboard();
+                    updateCartUI();
+                });
+                unsubscribes.push(unsubProducts);
+
+                const unsubSales = onSnapshot(collection(db, 'sales'), (snapshot) => {
+                    sales = [];
+                    snapshot.forEach(doc => sales.push({ id: doc.id, ...doc.data() }));
+                    sales.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    updateDashboard();
+                    renderHistoryList();
+                });
+                unsubscribes.push(unsubSales);
+            } catch (error) {
+                console.error("Initialization error:", error);
+            }
+        }
+
+        function clearData() {
+            unsubscribes.forEach(unsub => unsub());
+            unsubscribes = [];
+            cart = [];
+            updateCartUI();
+        }
+
+        // Navigation Switcher
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const targetSection = document.getElementById(tabId + '-section');
+            if (targetSection) targetSection.classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn-desk').forEach(btn => {
+                if (btn.dataset.target === tabId) {
+                    btn.classList.add('bg-[var(--border-color)]', 'text-primary');
+                } else {
+                    btn.classList.remove('bg-[var(--border-color)]', 'text-primary');
+                }
+            });
+
+            document.querySelectorAll('.nav-btn-mob').forEach(btn => {
+                if (btn.dataset.target === tabId) {
+                    btn.classList.add('text-primary');
+                    btn.classList.remove('opacity-60');
+                } else {
+                    btn.classList.remove('text-primary');
+                    btn.classList.add('opacity-60');
+                }
+            });
+
+            if (tabId === 'dashboard') updateDashboard();
+            if (tabId === 'history') renderHistoryList();
+        };
+
+        window.toggleMobileCart = function(show) {
+            const panel = document.getElementById('cart-panel');
+            if (show === true) {
+                panel.classList.remove('translate-y-full');
+            } else if (show === false) {
+                panel.classList.add('translate-y-full');
+            } else {
+                panel.classList.toggle('translate-y-full');
+            }
+        };
+
+        function updateShopNameUI() {
+            document.getElementById('sidebar-shop-name').textContent = shopName;
+            document.getElementById('mobile-shop-name').textContent = shopName;
+            document.getElementById('setting-shop-name').value = shopName;
+            document.title = shopName + " - POS";
+        }
+
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newName = document.getElementById('setting-shop-name').value;
+            if (!currentUser) return;
+            try {
+                await setDoc(doc(db, 'settings', 'shop_info'), { name: newName }, { merge: true });
+                showToast("Shop name updated successfully!");
+            } catch (err) {
+                showToast("Error updating name: " + err.message);
+            }
+        });
+
+        // Themes
+        window.setTheme = function(themeName) {
+            document.body.className = `flex flex-col md:flex-row theme-${themeName} select-none`;
+            localStorage.setItem('sportsshop_theme', themeName);
+        };
+
+        function loadLocalTheme() {
+            const saved = localStorage.getItem('sportsshop_theme');
+            if (saved) window.setTheme(saved);
+        }
+
+        // Categories Handling
+        function renderCategories() {
+            const selectEl = document.getElementById('prod-category');
+            const filtersEl = document.getElementById('pos-category-filters');
+            
+            let selectHTML = '';
+            let filtersHTML = `<button onclick="window.filterPOS('')" class="px-3 md:px-4 py-1.5 rounded-full btn-primary text-xs md:text-sm whitespace-nowrap pos-filter-btn active" data-cat="">All</button>`;
+
+            categories.forEach(cat => {
+                selectHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                filtersHTML += `<button onclick="window.filterPOS('${cat.id}')" class="px-3 md:px-4 py-1.5 rounded-full border border-[var(--border-color)] hover:bg-[var(--border-color)] text-xs md:text-sm whitespace-nowrap pos-filter-btn" data-cat="${cat.id}">${cat.name}</button>`;
+            });
+
+            selectEl.innerHTML = selectHTML;
+            filtersEl.innerHTML = filtersHTML;
+        }
+
+        window.openAddCategoryModal = function() {
+            document.getElementById('category-modal').classList.remove('hidden');
+            document.getElementById('quick-category-name').focus();
+        };
+
+        window.closeAddCategoryModal = function() {
+            document.getElementById('category-modal').classList.add('hidden');
+            document.getElementById('quick-category-name').value = '';
+        };
+
+        document.getElementById('inline-category-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('quick-category-name').value.trim();
+            if (!name || !currentUser) return;
+            try {
+                const docRef = await addDoc(collection(db, 'categories'), { name: name });
+                closeAddCategoryModal();
+                showToast("Category added successfully!");
+                setTimeout(() => {
+                    document.getElementById('prod-category').value = docRef.id;
+                }, 200);
+            } catch (err) {
+                showToast("Category Error: " + err.message);
+            }
+        });
+
+        // Manage & Delete Category System
+        window.openManageCategoryModal = function() {
+            renderManageCategoriesList();
+            document.getElementById('manage-category-modal').classList.remove('hidden');
+        };
+
+        window.closeManageCategoryModal = function() {
+            document.getElementById('manage-category-modal').classList.add('hidden');
+        };
+
+        function renderManageCategoriesList() {
+            const listEl = document.getElementById('manage-category-list');
+            if (categories.length === 0) {
+                listEl.innerHTML = '<p class="text-sm opacity-50 py-4 text-center">No categories found.</p>';
+                return;
+            }
+            let html = '';
+            categories.forEach(cat => {
+                html += `
+                    <div class="flex justify-between items-center p-3 bg-[var(--bg-color)] rounded-xl">
+                        <span class="font-medium text-sm">${cat.name}</span>
+                        <button onclick="window.deleteCategory('${cat.id}')" class="text-red-500 hover:text-red-700 bg-red-100 dark:bg-red-950/40 w-8 h-8 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        window.deleteCategory = async function(id) {
+            if (!currentUser) return;
+            try {
+                await deleteDoc(doc(db, 'categories', id));
+                showToast("Category deleted successfully");
+            } catch (err) {
+                showToast("Error deleting category: " + err.message);
+            }
+        };
+
+        // Products Handling
+        document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+            const data = {
+                name: document.getElementById('prod-name').value,
+                categoryId: document.getElementById('prod-category').value,
+                buyPrice: Number(document.getElementById('prod-buy-price').value) || 0,
+                price: Number(document.getElementById('prod-price').value),
+                stock: Number(document.getElementById('prod-stock').value)
+            };
+            try {
+                await addDoc(collection(db, 'products'), data);
+                document.getElementById('prod-name').value = '';
+                document.getElementById('prod-buy-price').value = '';
+                document.getElementById('prod-price').value = '';
+                document.getElementById('prod-stock').value = '';
+                showToast("Product added successfully!");
+            } catch (err) { 
+                showToast("Error: " + err.message); 
+            }
+        });
+
+        window.deleteProduct = async function(id) {
+            if (!currentUser) return;
+            try {
+                await deleteDoc(doc(db, 'products', id));
+                showToast("Product deleted");
+            } catch (err) { 
+                showToast("Error: " + err.message); 
+            }
+        };
+
+        function renderProductsList() {
+            const listEl = document.getElementById('inventory-list');
+            const search = document.getElementById('search-inventory').value.toLowerCase();
+            
+            let html = '';
+            products.filter(p => p.name.toLowerCase().includes(search)).forEach(p => {
+                const catName = categories.find(c => c.id === p.categoryId)?.name || 'Unknown';
+                const stockClass = p.stock < 5 ? 'text-red-500 font-bold' : '';
+                const buyPriceStr = p.buyPrice ? formatCur(p.buyPrice) : '-';
+                html += `
+                    <tr class="hover:bg-[var(--border-color)] hover:bg-opacity-20 transition-colors">
+                        <td class="p-3 font-medium">${p.name}</td>
+                        <td class="p-3 opacity-80">${catName}</td>
+                        <td class="p-3 text-blue-500 opacity-80">${buyPriceStr}</td>
+                        <td class="p-3 font-bold">${formatCur(p.price)}</td>
+                        <td class="p-3 ${stockClass}">${p.stock}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="window.deleteProduct('${p.id}')" class="text-red-500 hover:text-red-700 bg-red-500/10 w-8 h-8 rounded-lg">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        document.getElementById('search-inventory').addEventListener('input', renderProductsList);
+
+        // POS & Cart
+        let activePosCategory = '';
+        window.filterPOS = function(catId) {
+            activePosCategory = catId;
+            document.querySelectorAll('.pos-filter-btn').forEach(btn => {
+                if (btn.dataset.cat === catId) {
+                    btn.classList.add('btn-primary');
+                    btn.classList.remove('border', 'border-[var(--border-color)]');
+                } else {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('border', 'border-[var(--border-color)]');
+                }
+            });
+            renderPOSProducts();
+        };
+
+        function renderPOSProducts() {
+            const grid = document.getElementById('pos-product-grid');
+            let filtered = products;
+            if (activePosCategory) {
+                filtered = products.filter(p => p.categoryId === activePosCategory);
+            }
+
+            let html = '';
+            filtered.forEach(p => {
+                const isOutOfStock = p.stock <= 0;
+                html += `
+                    <div onclick="${isOutOfStock ? '' : `window.addToCart('${p.id}')`}" class="panel p-3 md:p-4 rounded-2xl shadow-sm cursor-pointer hover:shadow-md transition-all border border-transparent hover:border-primary flex flex-col justify-between h-28 md:h-32 touch-action-manipulation ${isOutOfStock ? 'opacity-40 grayscale cursor-not-allowed' : 'active:scale-95'}">
+                        <div>
+                            <h4 class="font-bold text-xs md:text-sm leading-tight line-clamp-2">${p.name}</h4>
+                            <p class="text-[11px] opacity-70 mt-1">Stock: ${p.stock}</p>
+                        </div>
+                        <div class="font-bold text-primary text-sm md:text-base">${formatCur(p.price)}</div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        window.addToCart = function(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product || product.stock <= 0) return;
+
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                if (existing.qty < product.stock) {
+                    existing.qty += 1;
+                } else {
+                    showToast("Not enough stock!");
+                    return;
+                }
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            updateCartUI();
+        };
+
+        window.updateCartQty = function(productId, delta) {
+            const index = cart.findIndex(item => item.id === productId);
+            if (index === -1) return;
+            
+            const product = products.find(p => p.id === productId);
+            const newQty = cart[index].qty + delta;
+
+            if (newQty <= 0) {
+                cart.splice(index, 1);
+            } else if (product && newQty > product.stock) {
+                showToast("Cannot exceed available stock!");
+            } else {
+                cart[index].qty = newQty;
+            }
+            updateCartUI();
+        };
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            let total = 0;
+            let itemCount = 0;
+            
+            if (cart.length === 0) {
+                container.innerHTML = '<div class="text-center opacity-50 py-12"><i class="fas fa-shopping-basket text-4xl mb-3"></i><br>Cart is empty</div>';
+            } else {
+                let html = '';
+                cart.forEach(item => {
+                    const itemTotal = item.price * item.qty;
+                    total += itemTotal;
+                    itemCount += item.qty;
+                    
+                    const liveProduct = products.find(p => p.id === item.id);
+                    const isError = !liveProduct || item.qty > liveProduct.stock;
+
+                    html += `
+                        <div class="flex flex-col gap-2 p-3 bg-[var(--bg-color)] rounded-xl ${isError ? 'border border-red-500' : ''}">
+                            <div class="flex justify-between items-start">
+                                <span class="font-medium text-xs md:text-sm leading-tight pr-2">${item.name}</span>
+                                <button onclick="window.updateCartQty('${item.id}', -${item.qty})" class="text-red-500 text-xs p-1"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <div class="flex justify-between items-center mt-1">
+                                <span class="font-bold text-primary text-xs md:text-sm">${formatCur(item.price)}</span>
+                                <div class="flex items-center gap-2 bg-[var(--panel-bg)] rounded-lg px-2 py-1 shadow-sm">
+                                    <button onclick="window.updateCartQty('${item.id}', -1)" class="w-6 h-6 flex justify-center items-center rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-xs">-</button>
+                                    <span class="text-xs md:text-sm font-medium w-6 text-center ${isError ? 'text-red-500' : ''}">${item.qty}</span>
+                                    <button onclick="window.updateCartQty('${item.id}', 1)" class="w-6 h-6 flex justify-center items-center rounded bg-primary text-white text-xs">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+
+            document.getElementById('cart-total').textContent = formatCur(total);
+            document.getElementById('cart-count').textContent = `${itemCount} items`;
+            
+            document.getElementById('mobile-cart-total').textContent = formatCur(total);
+            document.getElementById('mobile-cart-badge').textContent = itemCount;
+            document.getElementById('lbl-cart-items-count').textContent = `${itemCount} items`;
+        }
+
+        window.checkout = async function() {
+            if (!currentUser || cart.length === 0) return;
+            
+            let valid = true;
+            for (let item of cart) {
+                const liveProd = products.find(p => p.id === item.id);
+                if (!liveProd || item.qty > liveProd.stock) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (!valid) {
+                showToast("Cart contains items exceeding stock.");
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            let totalCost = 0;
+            cart.forEach(item => {
+                const liveProd = products.find(p => p.id === item.id);
+                const itemBuyPrice = (liveProd && liveProd.buyPrice) ? liveProd.buyPrice : 0;
+                totalCost += (itemBuyPrice * item.qty);
+            });
+
+            const saleData = {
+                items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
+                total: total,
+                totalCost: totalCost,
+                profit: total - totalCost,
+                timestamp: new Date().toISOString(),
+                cashierId: currentUser.uid
+            };
+
+            try {
+                for (const item of cart) {
+                    const productRef = doc(db, 'products', item.id);
+                    const liveProd = products.find(p => p.id === item.id);
+                    const newStock = Math.max(0, liveProd.stock - item.qty);
+                    await updateDoc(productRef, { stock: newStock });
+                }
+
+                await addDoc(collection(db, 'sales'), saleData);
+                
+                if (typeof window.printBluetoothReceipt === "function") {
+                    window.printBluetoothReceipt(saleData);
+                }
+
+                toggleMobileCart(false);
+                showReceipt(saleData);
+                
+                cart = [];
+                updateCartUI();
+                showToast("Checkout successful!");
+            } catch (err) {
+                showToast("Checkout failed: " + err.message);
+            }
+        };
+
+        // Receipts
+        window.showReceipt = function(saleData) {
+            const content = document.getElementById('receipt-content');
+            let dateStr = new Date(saleData.timestamp).toLocaleString();
+            let itemsHtml = '';
+            
+            saleData.items.forEach(item => {
+                itemsHtml += `
+                    <div class="flex justify-between py-1 text-xs md:text-sm border-b border-gray-100">
+                        <div>
+                            <span class="font-medium">${item.name}</span>
+                            <span class="text-[11px] text-gray-500 block">${item.qty} x ${formatCur(item.price)}</span>
+                        </div>
+                        <span class="font-medium">${formatCur(item.qty * item.price)}</span>
+                    </div>
+                `;
+            });
+
+            content.innerHTML = `
+                <div class="text-center mb-4">
+                    <h2 class="text-lg md:text-xl font-bold">${shopName}</h2>
+                    <p class="text-xs text-gray-500">Sales Voucher</p>
+                    <p class="text-[11px] text-gray-400 mt-1">${dateStr}</p>
+                </div>
+                <div class="border-t border-b border-gray-200 py-2 mb-4 space-y-1">
+                    ${itemsHtml}
+                </div>
+                <div class="flex justify-between items-center text-base md:text-lg font-bold">
+                    <span>Total Amount:</span>
+                    <span class="text-blue-600">${formatCur(saleData.total)}</span>
+                </div>
+                <p class="text-center text-[11px] text-gray-400 mt-6">Thank you for shopping with us!</p>
+            `;
+
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        };
+
+        window.closeReceipt = function() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        };
+
+        // Sales History Handler
+        function renderHistoryList() {
+            const listEl = document.getElementById('history-list');
+            const search = document.getElementById('search-history').value.toLowerCase();
+            
+            let filteredSales = sales;
+            if (search) {
+                filteredSales = sales.filter(s => {
+                    const dateStr = new Date(s.timestamp).toLocaleDateString().toLowerCase();
+                    const hasItem = s.items.some(i => i.name.toLowerCase().includes(search));
+                    return dateStr.includes(search) || hasItem;
+                });
+            }
+
+            if (filteredSales.length === 0) {
+                listEl.innerHTML = `<tr><td colspan="5" class="p-6 text-center opacity-50">No sales history found.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            filteredSales.forEach(s => {
+                const dateStr = new Date(s.timestamp).toLocaleString();
+                const itemsSummary = s.items.map(i => `${i.name} (x${i.qty})`).join(', ');
+                const profitStr = formatCur(s.profit !== undefined ? s.profit : (s.total - (s.totalCost || 0)));
+                
+                html += `
+                    <tr class="hover:bg-[var(--border-color)] hover:bg-opacity-20 transition-colors">
+                        <td class="p-3 font-medium whitespace-nowrap">${dateStr}</td>
+                        <td class="p-3 max-w-[200px] truncate" title="${itemsSummary}">${itemsSummary}</td>
+                        <td class="p-3 text-green-500 font-semibold">${profitStr}</td>
+                        <td class="p-3 font-bold">${formatCur(s.total)}</td>
+                        <td class="p-3 text-right whitespace-nowrap">
+                            <button onclick='window.reprintSale(${JSON.stringify(s)})' class="btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                <i class="fas fa-print mr-1"></i> Voucher
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        document.getElementById('search-history').addEventListener('input', renderHistoryList);
+
+        window.reprintSale = function(saleData) {
+            showReceipt(saleData);
+            if (typeof window.printBluetoothReceipt === "function" && btCharacteristic) {
+                window.printBluetoothReceipt(saleData);
+            }
+        };
+
+        // Dashboard & Analytics
+        function updateDashboard() {
+            const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
+            const totalCost = sales.reduce((sum, sale) => sum + (sale.totalCost || 0), 0);
+            const totalProfit = totalRevenue - totalCost;
+
+            let totalItemsSold = 0;
+            sales.forEach(sale => {
+                sale.items.forEach(item => totalItemsSold += item.qty);
+            });
+
+            document.getElementById('dash-total-sales').textContent = formatCur(totalRevenue);
+            document.getElementById('dash-total-profit').textContent = formatCur(totalProfit);
+            document.getElementById('dash-items-sold').textContent = totalItemsSold;
+
+            const lowStockItems = products.filter(p => p.stock < 5);
+            document.getElementById('dash-low-stock-count').textContent = lowStockItems.length;
+
+            let html = '';
+            if (lowStockItems.length === 0) {
+                html = `<tr><td colspan="3" class="p-4 text-center opacity-50">Stock levels are good!</td></tr>`;
+            } else {
+                lowStockItems.forEach(p => {
+                    const catName = categories.find(c => c.id === p.categoryId)?.name || '';
+                    html += `
+                        <tr class="border-b border-[var(--border-color)]">
+                            <td class="py-2.5 font-medium">${p.name}</td>
+                            <td class="py-2.5 opacity-70">${catName}</td>
+                            <td class="py-2.5 text-right text-red-500 font-bold">${p.stock}</td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('low-stock-list').innerHTML = html;
+
+            updateCharts();
+        }
+
+        function updateCharts() {
+            const last7Days = [...Array(7)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                return d.toISOString().split('T')[0];
+            }).reverse();
+
+            const dailySales = last7Days.map(dateStr => {
+                return sales.filter(s => s.timestamp.startsWith(dateStr))
+                            .reduce((sum, s) => sum + s.total, 0);
+            });
+
+            const barCtx = document.getElementById('salesBarChart');
+            if (barCtx) {
+                if (salesChartInstance) salesChartInstance.destroy();
+                salesChartInstance = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: last7Days.map(d => d.slice(5)),
+                        datasets: [{
+                            label: currentLang === 'en' ? 'Daily Sales (Ks)' : 'နေ့စဉ်ရောင်းရငွေ (Ks)',
+                            data: dailySales,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            const catSales = {};
+            sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    const prod = products.find(p => p.id === item.id);
+                    if (prod) {
+                        const cat = categories.find(c => c.id === prod.categoryId);
+                        const catName = cat ? cat.name : 'Other';
+                        catSales[catName] = (catSales[catName] || 0) + (item.price * item.qty);
+                    }
+                });
+            });
+
+            const pieCtx = document.getElementById('categoryPieChart');
+            if (pieCtx && Object.keys(catSales).length > 0) {
+                if (categoryChartInstance) categoryChartInstance.destroy();
+                categoryChartInstance = new Chart(pieCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(catSales),
+                        datasets: [{
+                            data: Object.values(catSales),
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+        }
+
+        // Bluetooth Thermal Printer
+        let btDevice = null;
+        let btCharacteristic = null;
+
+        window.connectBluetoothPrinter = async function() {
+            try {
+                btDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [
+                        '000018f0-0000-1000-8000-00805f9b34fb',
+                        '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+                        'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+                    ]
+                });
+                const server = await btDevice.gatt.connect();
+                const services = await server.getPrimaryServices();
+                
+                for (const service of services) {
+                    const characteristics = await service.getCharacteristics();
+                    for (const char of characteristics) {
+                        if (char.properties.write || char.properties.writeWithoutResponse) {
+                            btCharacteristic = char;
+                            break;
+                        }
+                    }
+                    if (btCharacteristic) break;
+                }
+                
+                const statusEl = document.getElementById('printer-status');
+                if (btCharacteristic) {
+                    statusEl.textContent = (currentLang === 'en' ? "Connected: " : "ချိတ်ဆက်ထားသည် - ") + btDevice.name;
+                    statusEl.classList.remove('hidden');
+                    showToast(currentLang === 'en' ? "Printer connected!" : "Printer ချိတ်ဆက်ပြီးပါပြီ");
+                } else {
+                    showToast("Printer characteristic write not supported.");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Bluetooth Connection cancelled or failed.");
+            }
+        };
+
+        window.printBluetoothReceipt = async function(saleData) {
+            if (!btCharacteristic) return;
+            
+            const encoder = new TextEncoder();
+            const ESC = "\x1B";
+            const GS = "\x1D";
+            const init = ESC + "@";
+            const alignCenter = ESC + "a\x01";
+            const alignLeft = ESC + "a\x00";
+            const boldOn = ESC + "E\x01";
+            const boldOff = ESC + "E\x00";
+            const cut = "\n\n\n\n" + GS + "V\x41\x00";
+
+            let dateStr = new Date(saleData.timestamp).toLocaleString();
+            let receiptText = init + alignCenter + boldOn + shopName + "\n" + boldOff;
+            receiptText += "--------------------------------\n";
+            receiptText += alignLeft + "Date: " + dateStr + "\n";
+            receiptText += "--------------------------------\n";
+            
+            saleData.items.forEach(item => {
+                let itemTotal = item.qty * item.price;
+                receiptText += `${item.name}\n${item.qty} x ${item.price} = Ks ${itemTotal}\n`;
+            });
+            
+            receiptText += "--------------------------------\n";
+            receiptText += alignCenter + boldOn + "Total: Ks " + saleData.total + boldOff + "\n";
+            receiptText += "Thank You!\n" + cut;
+
+            try {
+                await btCharacteristic.writeValue(encoder.encode(receiptText));
+            } catch (err) {
+                console.error("Print Error:", err);
+                showToast("Bluetooth Printing Failed.");
+            }
+        };
+
+        // PWA Direct Native WebAPK Install System
+        const autoBanner = document.getElementById('pwa-auto-banner');
+        const guideModal = document.getElementById('pwa-guide-modal');
+
+        function isAppInstalled() {
+            return window.isPWAInstalled ||
+                window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true;
+        }
+
+        window.openPWAGuideModal = function() {
+            if (guideModal) guideModal.classList.remove('hidden');
+        };
+
+        window.closePWAGuideModal = function() {
+            if (guideModal) guideModal.classList.add('hidden');
+        };
+
+        window.checkAndShowBanner = function() {
+            const installed = isAppInstalled();
+            const btnHeader = document.getElementById('btn-mobile-install-header');
+            const btnSidebar = document.getElementById('btn-desktop-install-sidebar');
+            const settCard = document.getElementById('settings-install-card');
+
+            if (installed) {
+                if (autoBanner) autoBanner.classList.add('hidden');
+                if (btnHeader) btnHeader.classList.add('hidden');
+                if (btnSidebar) btnSidebar.classList.add('hidden');
+                if (settCard) settCard.classList.add('hidden');
+                return;
+            }
+
+            if (btnHeader) btnHeader.classList.remove('hidden');
+            if (btnSidebar) btnSidebar.classList.remove('hidden');
+            if (settCard) settCard.classList.remove('hidden');
+
+            if (sessionStorage.getItem('pwa_banner_dismissed')) {
+                if (autoBanner) autoBanner.classList.add('hidden');
+                return;
+            }
+
+            // Display slide-up banner smoothly
+            if (autoBanner) {
+                setTimeout(() => {
+                    if (!isAppInstalled() && !sessionStorage.getItem('pwa_banner_dismissed')) {
+                        autoBanner.classList.remove('hidden');
+                    }
+                }, 800);
+            }
+        };
+
+        function setInstallButtonsLoading(loading) {
+            const btnBanner = document.getElementById('lbl-btn-banner-install');
+            const btnHeader = document.querySelector('#btn-mobile-install-header span');
+            const btnSidebar = document.getElementById('lbl-sidebar-install');
+            const btnSett = document.getElementById('lbl-btn-sett-install');
+
+            const text = loading
+                ? (currentLang === 'mm' ? "ခဏစောင့်ပါ..." : "Connecting...")
+                : (currentLang === 'mm' ? "သွင်းမည်" : "Install");
+
+            if (btnBanner) btnBanner.textContent = text;
+            if (btnHeader) btnHeader.textContent = text;
+            if (btnSidebar) btnSidebar.textContent = text;
+            if (btnSett) btnSett.textContent = text;
+        }
+
+        window.executePWAInstall = async function() {
+            const promptEvent = window.deferredPrompt;
+            if (!promptEvent) {
+                window.openPWAGuideModal();
+                return false;
+            }
+
+            window.isWaitingForPWAInstall = false;
+            setInstallButtonsLoading(false);
+
+            try {
+                await promptEvent.prompt();
+                const choice = await promptEvent.userChoice;
+                console.log('User install choice:', choice);
+                if (choice && choice.outcome === 'accepted') {
+                    showToast(currentLang === 'mm' ? "ဖုန်းထဲသို့ Application အဖြစ် တိုက်ရိုက် သွင်းယူနေပါသည်..." : "Installing directly to device...");
+                    window.deferredPrompt = null;
+                    if (autoBanner) autoBanner.classList.add('hidden');
+                } else {
+                    showToast(currentLang === 'mm' ? "Install တင်ခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။" : "Installation was cancelled.");
+                }
+                return true;
+            } catch (err) {
+                console.error("Install prompt error:", err);
+                window.openPWAGuideModal();
+                return false;
+            }
+        };
+
+        window.triggerPWAInstall = async function() {
+            // 1. If already installed as standalone
+            if (isAppInstalled()) {
+                showToast(currentLang === 'mm' ? "App အား ထည့်သွင်းထားပြီး ဖြစ်ပါသည်ခင်ဗျာ။" : "App is already installed.");
+                return;
+            }
+
+            // 2. If deferredPrompt was already captured by Chrome, execute native dialog immediately!
+            if (window.deferredPrompt) {
+                await window.executePWAInstall();
+                return;
+            }
+
+            // 3. If deferredPrompt is pending, wait 1 second; if still not available, open the step-by-step guide
+            window.isWaitingForPWAInstall = true;
+            setInstallButtonsLoading(true);
+
+            let checkCount = 0;
+            const fastChecker = setInterval(async () => {
+                checkCount++;
+                if (window.deferredPrompt) {
+                    clearInterval(fastChecker);
+                    await window.executePWAInstall();
+                } else if (checkCount >= 3) { // 1.2 seconds max
+                    clearInterval(fastChecker);
+                    window.isWaitingForPWAInstall = false;
+                    setInstallButtonsLoading(false);
+                    // Open the visual step-by-step guide so the user is NEVER stuck!
+                    window.openPWAGuideModal();
+                }
+            }, 400);
+        };
+
+        window.dismissInstallBanner = function() {
+            if (autoBanner) autoBanner.classList.add('hidden');
+            sessionStorage.setItem('pwa_banner_dismissed', 'true');
+        };
+
+        window.addEventListener('appinstalled', () => {
+            window.deferredPrompt = null;
+            window.isPWAInstalled = true;
+            if (autoBanner) autoBanner.classList.add('hidden');
+            if (guideModal) guideModal.classList.add('hidden');
+            showToast(currentLang === 'mm' ? "Sports Shop App အား Install တင်ပြီးပါပြီ!" : "Sports Shop App Installed!");
+            checkAndShowBanner();
+        });
+
+        // Trigger banner check right away when page loads
+        window.addEventListener('DOMContentLoaded', checkAndShowBanner);
+
+        // AI Assistant Logic
+        window.toggleAIChat = function() {
+            const chatWin = document.getElementById('ai-chat-window');
+            chatWin.classList.toggle('hidden');
+            if (!chatWin.classList.contains('hidden')) {
+                document.getElementById('ai-input').focus();
+            }
+        };
+
+        window.sendQuickPrompt = function(text) {
+            document.getElementById('ai-input').value = text;
+            handleAISubmit(new Event('submit'));
+        };
+
+        const aiChatForm = document.getElementById('ai-chat-form');
+        if (aiChatForm) {
+            aiChatForm.addEventListener('submit', handleAISubmit);
+        }
+
+        async function handleAISubmit(e) {
+            if (e) e.preventDefault();
+            const inputEl = document.getElementById('ai-input');
+            const userMsg = inputEl.value.trim();
+            if (!userMsg) return;
+
+            appendAIMessage(userMsg, 'user');
+            inputEl.value = '';
+
+            const botReply = generateAIResponse(userMsg);
+            setTimeout(() => {
+                appendAIMessage(botReply, 'bot');
+            }, 300);
+        }
+
+        function appendAIMessage(text, sender) {
+            const container = document.getElementById('ai-messages');
+            const div = document.createElement('div');
+            
+            if (sender === 'user') {
+                div.className = "bg-primary text-white p-2.5 rounded-xl rounded-tr-none ml-auto max-w-[85%] leading-relaxed shadow-sm";
+            } else {
+                div.className = "bg-[var(--bg-color)] p-2.5 rounded-xl rounded-tl-none max-w-[85%] leading-relaxed border border-[var(--border-color)]";
+            }
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function generateAIResponse(query) {
+            const q = query.toLowerCase();
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todaySales = sales.filter(s => s.timestamp && s.timestamp.startsWith(todayStr));
+            const todayTotal = todaySales.reduce((sum, s) => sum + s.total, 0);
+            const todayProfit = todaySales.reduce((sum, s) => sum + (s.profit !== undefined ? s.profit : (s.total - (s.totalCost || 0))), 0);
+
+            const allTotalRevenue = sales.reduce((sum, s) => sum + s.total, 0);
+            const allTotalProfit = sales.reduce((sum, s) => sum + (s.profit !== undefined ? s.profit : (s.total - (s.totalCost || 0))), 0);
+            const lowStockItems = products.filter(p => p.stock < 5);
+
+            if (q.includes('ယနေ့') || q.includes('ဒီနေ့') || q.includes('today')) {
+                return `📊 <b>ယနေ့ အရောင်းအခြေအနေ:</b>\n• အရောင်းအကြိမ်ရေ: <b>${todaySales.length}</b> ကြိမ်\n• ရောင်းရငွေ: <b>${formatCur(todayTotal)}</b>\n• ရရှိသည့်အမြတ်: <b>${formatCur(todayProfit)}</b>`;
+            }
+
+            if (q.includes('လက်ကျန်') || q.includes('ပြတ်') || q.includes('stock') || q.includes('low')) {
+                if (lowStockItems.length === 0) {
+                    return `✅ ပစ္စည်းလက်ကျန်များ အားလုံး အခြေအနေ ကောင်းမွန်ပါသည်။ ပြတ်လပ်နေသော ပစ္စည်း မရှိသေးပါ။`;
+                }
+                const itemsList = lowStockItems.map(p => `• ${p.name} (လက်ကျန်: ${p.stock})`).slice(0, 5).join('\n');
+                return `⚠️ <b>လက်ကျန် နည်းနေသော ပစ္စည်းများ (${lowStockItems.length} မျိုး):</b>\n${itemsList}\n\n<i>ကုန်ပစ္စည်း ကြိုတင်မှာယူရန် အကြံပြုပါသည်။</i>`;
+            }
+
+            if (q.includes('အမြတ်') || q.includes('profit')) {
+                return `💰 <b>အမြတ်ငွေ စာရင်းချုပ်:</b>\n• ယနေ့အမြတ်: <b>${formatCur(todayProfit)}</b>\n• စုစုပေါင်း အသားတင်အမြတ်: <b>${formatCur(allTotalProfit)}</b>`;
+            }
+
+            if (q.includes('စုစုပေါင်း') || q.includes('all') || q.includes('total') || q.includes('အရောင်း')) {
+                return `📈 <b>ဆိုင်တစ်ခုလုံး စာရင်းချုပ်:</b>\n• ပစ္စည်းစုစုပေါင်း: <b>${products.length}</b> မျိုး\n• စုစုပေါင်း ရောင်းရငွေ: <b>${formatCur(allTotalRevenue)}</b>\n• စုစုပေါင်း အရောင်းဘောက်ချာ: <b>${sales.length}</b> စောင်`;
+            }
+
+            return `🤖 <b>ဆိုင်၏ အချက်အလက်များ မေးမြန်းနိုင်ပါသည်:</b>\n၁။ "ယနေ့ အရောင်းအခြေအနေ"\n၂။ "လက်ကျန်နည်းနေတဲ့ ပစ္စည်းများ"\n၃။ "စုစုပေါင်း အမြတ်ငွေ"\nစသည်ဖြင့် အလွယ်တကူ ရိုက်နှိပ် မေးမြန်းနိုင်ပါသည် ခင်ဗျာ။`;
+        }
+
+
+    </script>
+</body>
+</html>
