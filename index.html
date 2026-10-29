@@ -282,6 +282,13 @@
                     <i class="fas fa-calculator w-6"></i>
                     <span class="font-medium" id="nav-pos">POS</span>
                 </button>
+
+                <!-- ORDERS TAB -->
+                <button onclick="switchTab('orders')" class="nav-btn-desk w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--border-color)] transition-colors" data-target="orders">
+                    <i class="fas fa-clipboard-list w-6"></i>
+                    <span class="font-medium" id="nav-orders">Orders</span>
+                </button>
+
                 <button onclick="switchTab('inventory')" class="nav-btn-desk w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--border-color)] transition-colors" data-target="inventory">
                     <i class="fas fa-box-open w-6"></i>
                     <span class="font-medium" id="nav-inventory">Inventory</span>
@@ -391,6 +398,19 @@
                 </div>
             </section>
 
+            <!-- NEW ORDERS SECTION (Team Order Book) -->
+            <section id="orders-section" class="tab-content hidden h-full p-4 md:p-8 overflow-y-auto">
+                <div class="flex flex-wrap gap-3 justify-between items-center mb-4 md:mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold">Team Orders / အော်ဒါမှတ်စု</h2>
+                    <button onclick="openTeamOrderModal()" class="btn-primary px-4 py-2 rounded-xl text-sm font-bold shadow-md flex items-center gap-2 active:scale-95">
+                        <i class="fas fa-plus"></i> အော်ဒါအသစ်ဖွင့်မည်
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 gap-4" id="active-orders-list">
+                    <div class="text-center opacity-50 py-12">No active orders found.</div>
+                </div>
+            </section>
+
             <!-- Inventory Section -->
             <section id="inventory-section" class="tab-content hidden h-full p-4 md:p-8 overflow-y-auto">
                 <div class="flex justify-between items-center mb-4 md:mb-6">
@@ -410,7 +430,6 @@
                                 <label class="block text-xs md:text-sm font-medium mb-1" id="lbl-category">Category</label>
                                 <div class="flex gap-2">
                                     <select id="prod-category" required class="input-field flex-1 px-3 py-2.5 rounded-xl text-sm">
-                                        <!-- Categories populated by JS -->
                                     </select>
                                     <button type="button" onclick="openAddCategoryModal()" class="btn-primary px-3 py-2 rounded-xl font-bold flex items-center justify-center" title="Add Category">
                                         <i class="fas fa-plus"></i>
@@ -430,10 +449,31 @@
                                     <input type="number" id="prod-price" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] md:text-xs font-medium mb-1" id="lbl-stock">Stock</label>
+                                    <label class="block text-[11px] md:text-xs font-medium mb-1" id="lbl-stock">Total Stock</label>
                                     <input type="number" id="prod-stock" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm">
                                 </div>
                             </div>
+
+                            <!-- 🌟 NEW FEATURE: Size Details Checkbox & Inputs -->
+                            <div class="flex items-center gap-2 mt-2 bg-primary/10 p-2 rounded-lg">
+                                <input type="checkbox" id="prod-has-sizes" class="w-4 h-4 text-primary rounded cursor-pointer" onchange="document.getElementById('size-inputs-container').classList.toggle('hidden', !this.checked)">
+                                <label for="prod-has-sizes" class="text-[11px] md:text-xs font-semibold cursor-pointer text-primary">ဆိုက်ဖြင့်ခွဲထည့်မည် (Has Sizes)</label>
+                            </div>
+                            
+                            <div id="size-inputs-container" class="hidden grid grid-cols-5 gap-1.5 mt-2 bg-[var(--bg-color)] p-2 rounded-xl border border-[var(--border-color)]">
+                                <div><label class="block text-[10px] font-bold text-center mb-1">S</label><input type="number" id="size-s" min="0" class="input-field w-full px-1 py-1.5 rounded-lg text-center text-xs" placeholder="0" oninput="window.calculateTotalStockFromSizes()"></div>
+                                <div><label class="block text-[10px] font-bold text-center mb-1">M</label><input type="number" id="size-m" min="0" class="input-field w-full px-1 py-1.5 rounded-lg text-center text-xs" placeholder="0" oninput="window.calculateTotalStockFromSizes()"></div>
+                                <div><label class="block text-[10px] font-bold text-center mb-1">L</label><input type="number" id="size-l" min="0" class="input-field w-full px-1 py-1.5 rounded-lg text-center text-xs" placeholder="0" oninput="window.calculateTotalStockFromSizes()"></div>
+                                <div><label class="block text-[10px] font-bold text-center mb-1">XL</label><input type="number" id="size-xl" min="0" class="input-field w-full px-1 py-1.5 rounded-lg text-center text-xs" placeholder="0" oninput="window.calculateTotalStockFromSizes()"></div>
+                                <div><label class="block text-[10px] font-bold text-center mb-1">XXL</label><input type="number" id="size-xxl" min="0" class="input-field w-full px-1 py-1.5 rounded-lg text-center text-xs" placeholder="0" oninput="window.calculateTotalStockFromSizes()"></div>
+                            </div>
+
+                            <!-- Custom Item Checkbox -->
+                            <div class="flex items-center gap-2 mt-2 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
+                                <input type="checkbox" id="prod-is-custom" class="w-4 h-4 text-gray-500 rounded cursor-pointer">
+                                <label for="prod-is-custom" class="text-[11px] md:text-xs font-medium cursor-pointer">Custom Item (Size/Name/Number အလွတ်တောင်းရန်)</label>
+                            </div>
+
                             <button type="submit" class="btn-primary w-full py-2.5 md:py-3 rounded-xl font-medium mt-2 shadow" id="btn-add-product">Add Product</button>
                         </form>
                     </div>
@@ -568,6 +608,23 @@
                         </form>
                     </div>
 
+                    <!-- AI Toggle Setting -->
+                    <div class="panel p-5 md:p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold text-base md:text-lg mb-3 border-b border-[var(--border-color)] pb-2 flex items-center gap-2">
+                            <i class="fas fa-robot text-primary"></i> AI Assistant
+                        </h3>
+                        <div class="flex items-center justify-between mt-4">
+                            <div>
+                                <p class="font-medium text-sm">Enable AI Chatbot</p>
+                                <p class="text-xs opacity-70">Show or hide the floating AI button.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" id="toggle-ai-setting" class="sr-only peer" onchange="window.toggleAISetting(this.checked)">
+                              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Appearance -->
                     <div class="panel p-5 md:p-6 rounded-2xl shadow-sm">
                         <h3 class="font-bold text-base md:text-lg mb-3 border-b border-[var(--border-color)] pb-2"><i class="fas fa-palette mr-2"></i> Color Theme</h3>
@@ -622,6 +679,10 @@
                 <i class="fas fa-calculator text-lg"></i>
                 <span class="text-[10px] font-medium mt-0.5" id="nav-mob-pos">POS</span>
             </button>
+            <button onclick="switchTab('orders')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="orders">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5">Orders</span>
+            </button>
             <button onclick="switchTab('inventory')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="inventory">
                 <i class="fas fa-box-open text-lg"></i>
                 <span class="text-[10px] font-medium mt-0.5" id="nav-mob-inv">Inventory</span>
@@ -634,11 +695,112 @@
                 <i class="fas fa-chart-pie text-lg"></i>
                 <span class="text-[10px] font-medium mt-0.5" id="nav-mob-dash">Stats</span>
             </button>
-            <button onclick="switchTab('settings')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="settings">
-                <i class="fas fa-cog text-lg"></i>
-                <span class="text-[10px] font-medium mt-0.5" id="nav-mob-sett">Settings</span>
-            </button>
         </nav>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- TEAM ORDER MODAL -->
+    <div id="team-order-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
+        <div class="panel p-5 md:p-6 rounded-2xl shadow-2xl w-full max-w-2xl my-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
+                <h3 class="font-bold text-lg">အသင်းလိုက် အော်ဒါအသစ် (Team Order)</h3>
+                <button onclick="closeTeamOrderModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            
+            <form id="team-order-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium mb-1">Customer အမည် (ဖုန်းနံပါတ်)</label>
+                        <input type="text" id="team-customer" required class="input-field w-full px-3 py-2 rounded-xl text-sm" placeholder="e.g. ကိုအောင် (09...)">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">အင်္ကျီ / ပစ္စည်း ရွေးချယ်ရန်</label>
+                        <select id="team-product" required class="input-field w-full px-3 py-2 rounded-xl text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">စုစုပေါင်း အရေအတွက် (Qty)</label>
+                        <input type="number" id="team-qty" required min="1" class="input-field w-full px-3 py-2 rounded-xl text-sm" oninput="generateTeamRows()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">တစ်ထည် ရောင်းဈေး (Bulk Price)</label>
+                        <input type="number" id="team-unit-price" required min="0" class="input-field w-full px-3 py-2 rounded-xl text-sm" oninput="calculateTeamTotals()">
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto" id="team-rows-container">
+                    <p class="text-xs opacity-50 text-center py-2">အရေအတွက် (Qty) ရိုက်ထည့်ပါက အမည်၊ ဆိုက်၊ နံပါတ် ထည့်ရန် အကွက်များ အလိုအလျောက် ပေါ်လာပါမည်။</p>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 bg-[var(--bg-color)] p-3 rounded-xl border border-[var(--border-color)]">
+                    <div>
+                        <label class="block text-[11px] font-bold mb-1 opacity-70">စုစုပေါင်း ကျသင့်ငွေ</label>
+                        <div class="font-bold text-primary text-sm md:text-base" id="team-total-display">Ks 0</div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold mb-1 opacity-70">စရန်ပေးငွေ (Deposit)</label>
+                        <input type="number" id="team-deposit" min="0" class="input-field w-full px-2 py-1.5 rounded-lg text-sm font-bold text-green-600" oninput="calculateTeamTotals()" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold mb-1 opacity-70">ပေးရန်ကျန်ငွေ (Balance)</label>
+                        <div class="font-bold text-red-500 text-sm md:text-base" id="team-balance-display">Ks 0</div>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="btn-primary w-full py-3 rounded-xl font-bold shadow-md flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> အော်ဒါသိမ်းမည် (စတော့မှနုတ်မည်)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 🌟 NEW FEATURE: Size Selection Modal for POS -->
+    <div id="pos-size-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="panel p-6 rounded-2xl shadow-2xl w-full max-w-sm">
+            <h3 class="font-bold text-lg mb-4 border-b border-[var(--border-color)] pb-2" id="lbl-pos-size-title">Select Size</h3>
+            <input type="hidden" id="pos-size-product-id">
+            <div class="grid grid-cols-5 gap-2" id="pos-size-buttons">
+                <!-- Populated by JS -->
+            </div>
+            <div class="flex justify-end pt-5 mt-4 border-t border-[var(--border-color)]">
+                <button onclick="document.getElementById('pos-size-modal').classList.add('hidden')" class="px-4 py-2 rounded-xl border border-[var(--border-color)] text-sm font-medium">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Item Add Modal -->
+    <div id="custom-item-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="panel p-6 rounded-2xl shadow-2xl w-full max-w-sm">
+            <h3 class="font-bold text-lg mb-4 border-b border-[var(--border-color)] pb-2" id="lbl-custom-title">Customize Item</h3>
+            <input type="hidden" id="custom-product-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium mb-1">Size (ဆိုက်)</label>
+                    <select id="custom-size" class="input-field w-full px-3 py-2 rounded-xl text-sm">
+                        <option value="">None (မလိုပါ)</option>
+                        <option value="S">S</option><option value="M">M</option><option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1">Name (အင်္ကျီပေါ်ရေးမည့်အမည်)</label>
+                    <input type="text" id="custom-name" class="input-field w-full px-3 py-2 rounded-xl text-sm" placeholder="e.g. AUNG AUNG">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1">Number (ကျောနံပါတ်)</label>
+                    <input type="text" id="custom-number" class="input-field w-full px-3 py-2 rounded-xl text-sm" placeholder="e.g. 10">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1">Extra Notes (အခြားမှတ်စု)</label>
+                    <input type="text" id="custom-extra" class="input-field w-full px-3 py-2 rounded-xl text-sm" placeholder="e.g. အပြာရောင်, V-neck...">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-5">
+                <button onclick="closeCustomModal()" class="px-4 py-2 rounded-xl border border-[var(--border-color)] text-sm font-medium">Cancel</button>
+                <button onclick="confirmCustomAddToCart()" class="btn-primary px-4 py-2 rounded-xl text-sm font-medium">Add to Order</button>
+            </div>
+        </div>
     </div>
 
     <!-- Quick Add Category Modal -->
@@ -672,42 +834,23 @@
         </div>
     </div>
 
-    <!-- Receipt Modal -->
+    <!-- Receipt Modal & Factory List Option -->
     <div id="receipt-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 no-print">
         <div class="bg-white text-black p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-sm relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeReceipt()" class="absolute top-4 right-4 text-gray-400 hover:text-black no-print">
                 <i class="fas fa-times text-xl"></i>
             </button>
             <div id="receipt-content"></div>
-            <div class="mt-6 pt-4 border-t border-dashed flex gap-3 no-print">
-                <button onclick="window.print()" class="btn-primary flex-1 py-2.5 rounded-xl font-bold text-sm"><i class="fas fa-print mr-2"></i> Print</button>
-                <button onclick="closeReceipt()" class="bg-gray-100 text-gray-800 flex-1 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200">Close</button>
+            
+            <div class="mt-6 pt-4 border-t border-dashed flex gap-2 no-print flex-col sm:flex-row">
+                <button onclick="window.print()" class="btn-primary flex-1 py-2.5 rounded-xl font-bold text-sm shadow-sm"><i class="fas fa-print mr-1"></i> Voucher</button>
+                <button onclick="window.printFactoryMode()" class="bg-gray-800 text-white flex-1 py-2.5 rounded-xl font-bold text-sm shadow-sm active:scale-95"><i class="fas fa-industry mr-1"></i> Factory List</button>
             </div>
+            <button onclick="closeReceipt()" class="w-full bg-gray-100 text-gray-800 mt-2 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 no-print">Close</button>
         </div>
     </div>
 
-    <!-- Auto Slide-up Install Banner -->
-    <div id="pwa-auto-banner" class="hidden fixed bottom-20 md:bottom-6 left-3 right-3 md:left-auto md:right-6 md:w-96 panel p-3.5 md:p-4 rounded-2xl shadow-2xl border-2 border-primary z-[9990] flex items-center justify-between gap-3 transition-all duration-300">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary flex items-center justify-center text-white text-lg md:text-xl shadow flex-shrink-0">
-                <i class="fas fa-running"></i>
-            </div>
-            <div>
-                <h4 class="font-bold text-xs md:text-sm leading-tight" id="lbl-banner-title">Sports Shop POS</h4>
-                <p class="text-[11px] opacity-70 mt-0.5" id="lbl-banner-desc">Home Screen တွင် App အဖြစ် သွင်းယူရန်</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-1.5 flex-shrink-0">
-            <button onclick="triggerPWAInstall()" class="btn-primary text-xs px-3.5 py-2 rounded-xl font-bold shadow active:scale-95 transition-transform flex items-center gap-1.5 whitespace-nowrap">
-                <i class="fas fa-download"></i> <span id="lbl-btn-banner-install">Install</span>
-            </button>
-            <button onclick="dismissInstallBanner()" class="text-gray-400 hover:text-gray-600 p-1.5 text-sm" title="Dismiss">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- PWA Step-by-Step Install Guide Modal (Fallback for instant manual install) -->
+    <!-- PWA Install Guide Modal -->
     <div id="pwa-guide-modal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
         <div class="panel p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center border-2 border-primary/30 relative">
             <button onclick="closePWAGuideModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 text-sm">
@@ -745,8 +888,6 @@
             </button>
         </div>
     </div>
-
-
 
     <!-- Floating AI Assistant Button -->
     <button id="ai-chat-btn" onclick="toggleAIChat()" class="fixed bottom-20 md:bottom-8 right-4 md:right-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white w-12 h-12 md:w-14 md:h-14 rounded-full shadow-2xl flex items-center justify-center text-xl z-[9980] hover:scale-105 active:scale-95 transition-all">
@@ -814,17 +955,29 @@
         let products = [];
         let categories = [];
         let sales = [];
-        let cart = [];
+        let activeOrders = []; // TEAM ORDERS ARRAY
+        let cart = []; // Format: { cartId, productId, name, price, qty, customNote }
         let unsubscribes = [];
+        let currentViewingSale = null;
 
         let currentLang = localStorage.getItem('sportsshop_lang') || 'en';
         let salesChartInstance = null;
         let categoryChartInstance = null;
 
+        // FEATURE 5: AI Toggle Setting
+        window.toggleAISetting = async function(enabled) {
+            document.getElementById('ai-chat-btn').style.display = enabled ? 'flex' : 'none';
+            if(currentUser) {
+                try {
+                    await setDoc(doc(db, 'shops', currentUser.uid, 'settings', 'app_prefs'), { ai_enabled: enabled }, { merge: true });
+                } catch(e) { console.error("Failed to save AI setting", e); }
+            }
+        };
+
         const i18n = {
             en: {
-                'nav-pos': 'POS', 'nav-inventory': 'Inventory', 'nav-history': 'History', 'nav-dashboard': 'Dashboard', 'nav-settings': 'Settings', 'nav-lang': 'EN / မြန်မာ', 'nav-logout': 'Logout',
-                'nav-mob-pos': 'POS', 'nav-mob-inv': 'Inventory', 'nav-mob-hist': 'History', 'nav-mob-dash': 'Stats', 'nav-mob-sett': 'Settings',
+                'nav-pos': 'POS', 'nav-orders': 'Orders', 'nav-inventory': 'Inventory', 'nav-history': 'History', 'nav-dashboard': 'Dashboard', 'nav-settings': 'Settings', 'nav-lang': 'EN / မြန်မာ', 'nav-logout': 'Logout',
+                'nav-mob-pos': 'POS', 'nav-mob-orders': 'Orders', 'nav-mob-inv': 'Inventory', 'nav-mob-hist': 'History', 'nav-mob-dash': 'Stats', 'nav-mob-sett': 'Settings',
                 'title-dashboard': 'Dashboard Summary', 'lbl-total-sales': 'Total Sales', 'lbl-total-profit': 'Net Profit', 'lbl-items-sold': 'Products Sold', 'lbl-low-stock': 'Low Stock Alerts',
                 'lbl-chart-sales': 'Sales Trend (Last 7 Days)', 'lbl-chart-category': 'Sales by Category',
                 'title-inventory': 'Inventory Management', 'title-add-product': 'Add New Product', 'lbl-prod-name': 'Product Name', 'lbl-category': 'Category',
@@ -837,8 +990,8 @@
                 'lbl-banner-title': 'Sports Shop POS', 'lbl-banner-desc': 'Install as App on your device', 'lbl-btn-banner-install': 'Install'
             },
             mm: {
-                'nav-pos': 'အရောင်း', 'nav-inventory': 'ကုန်စည်စာရင်း', 'nav-history': 'အရောင်းမှတ်တမ်း', 'nav-dashboard': 'စာရင်းချုပ်', 'nav-settings': 'ဆက်တင်များ', 'nav-lang': 'EN / မြန်မာ', 'nav-logout': 'ထွက်မည်',
-                'nav-mob-pos': 'အရောင်း', 'nav-mob-inv': 'ကုန်စည်', 'nav-mob-hist': 'မှတ်တမ်း', 'nav-mob-dash': 'စာရင်းချုပ်', 'nav-mob-sett': 'ဆက်တင်',
+                'nav-pos': 'အရောင်း', 'nav-orders': 'အော်ဒါများ', 'nav-inventory': 'ကုန်စည်စာရင်း', 'nav-history': 'အရောင်းမှတ်တမ်း', 'nav-dashboard': 'စာရင်းချုပ်', 'nav-settings': 'ဆက်တင်များ', 'nav-lang': 'EN / မြန်မာ', 'nav-logout': 'ထွက်မည်',
+                'nav-mob-pos': 'အရောင်း', 'nav-mob-orders': 'အော်ဒါများ', 'nav-mob-inv': 'ကုန်စည်', 'nav-mob-hist': 'မှတ်တမ်း', 'nav-mob-dash': 'စာရင်းချုပ်', 'nav-mob-sett': 'ဆက်တင်',
                 'title-dashboard': 'လုပ်ငန်း စာရင်းချုပ်', 'lbl-total-sales': 'စုစုပေါင်း ရောင်းရငွေ', 'lbl-total-profit': 'အသားတင် အမြတ်ငွေ', 'lbl-items-sold': 'ရောင်းရသည့် အရေအတွက်', 'lbl-low-stock': 'ပစ္စည်းပြတ်လပ်မှု သတိပေးချက်',
                 'lbl-chart-sales': 'ရက်သတ္တပတ်အတွင်း အရောင်းပြမျဉ်း', 'lbl-chart-category': 'အမျိုးအစားအလိုက် ရောင်းရမှု',
                 'title-inventory': 'ကုန်စည် စီမံခန့်ခွဲမှု', 'title-add-product': 'ပစ္စည်းအသစ်ထည့်မည်', 'lbl-prod-name': 'ပစ္စည်းအမည်', 'lbl-category': 'အမျိုးအစား',
@@ -1125,6 +1278,18 @@
                 });
                 unsubscribes.push(unsubSettings);
 
+                // FEATURE 5: Load AI Settings
+                const unsubAIPrefs = onSnapshot(doc(db, 'shops', currentUser.uid, 'settings', 'app_prefs'), (docSnap) => {
+                    let aiEnabled = true;
+                    if(docSnap.exists() && docSnap.data().ai_enabled !== undefined) {
+                        aiEnabled = docSnap.data().ai_enabled;
+                    }
+                    document.getElementById('ai-chat-btn').style.display = aiEnabled ? 'flex' : 'none';
+                    const toggle = document.getElementById('toggle-ai-setting');
+                    if(toggle) toggle.checked = aiEnabled;
+                });
+                unsubscribes.push(unsubAIPrefs);
+
                 const unsubCategories = onSnapshot(collection(db, 'shops', currentUser.uid, 'categories'), (snapshot) => {
                     categories = [];
                     snapshot.forEach(doc => categories.push({ id: doc.id, ...doc.data() }));
@@ -1151,6 +1316,16 @@
                     renderHistoryList();
                 });
                 unsubscribes.push(unsubSales);
+                
+                // FEATURE: Load Team Orders
+                const unsubOrders = onSnapshot(collection(db, 'shops', currentUser.uid, 'orders'), (snapshot) => {
+                    activeOrders = [];
+                    snapshot.forEach(doc => activeOrders.push({ id: doc.id, ...doc.data() }));
+                    activeOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    if(typeof renderOrdersList === 'function') renderOrdersList();
+                });
+                unsubscribes.push(unsubOrders);
+
             } catch (error) {
                 console.error("Initialization error:", error);
             }
@@ -1160,6 +1335,7 @@
             unsubscribes.forEach(unsub => unsub());
             unsubscribes = [];
             cart = [];
+            activeOrders = [];
             updateCartUI();
         }
 
@@ -1315,23 +1491,51 @@
             }
         };
 
-        // Products Handling
+        // 🌟 NEW FEATURE: Calculate Total Stock from Sizes
+        window.calculateTotalStockFromSizes = function() {
+            const hasSizes = document.getElementById('prod-has-sizes').checked;
+            if(hasSizes) {
+                const s = Number(document.getElementById('size-s').value) || 0;
+                const m = Number(document.getElementById('size-m').value) || 0;
+                const l = Number(document.getElementById('size-l').value) || 0;
+                const xl = Number(document.getElementById('size-xl').value) || 0;
+                const xxl = Number(document.getElementById('size-xxl').value) || 0;
+                document.getElementById('prod-stock').value = (s + m + l + xl + xxl);
+            }
+        };
+
+        // Products Handling (Updated for Size Matrix)
         document.getElementById('add-product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) return;
+
+            const hasSizes = document.getElementById('prod-has-sizes').checked;
+            let stock = Number(document.getElementById('prod-stock').value) || 0;
+            let sizesObj = { S: 0, M: 0, L: 0, XL: 0, XXL: 0 };
+            
+            if(hasSizes) {
+                sizesObj.S = Number(document.getElementById('size-s').value) || 0;
+                sizesObj.M = Number(document.getElementById('size-m').value) || 0;
+                sizesObj.L = Number(document.getElementById('size-l').value) || 0;
+                sizesObj.XL = Number(document.getElementById('size-xl').value) || 0;
+                sizesObj.XXL = Number(document.getElementById('size-xxl').value) || 0;
+                stock = sizesObj.S + sizesObj.M + sizesObj.L + sizesObj.XL + sizesObj.XXL;
+            }
+
             const data = {
                 name: document.getElementById('prod-name').value,
                 categoryId: document.getElementById('prod-category').value,
                 buyPrice: Number(document.getElementById('prod-buy-price').value) || 0,
                 price: Number(document.getElementById('prod-price').value),
-                stock: Number(document.getElementById('prod-stock').value)
+                stock: stock,
+                hasSizes: hasSizes,
+                sizes: sizesObj,
+                isCustom: document.getElementById('prod-is-custom').checked // FEATURE 1
             };
             try {
                 await addDoc(collection(db, 'shops', currentUser.uid, 'products'), data);
-                document.getElementById('prod-name').value = '';
-                document.getElementById('prod-buy-price').value = '';
-                document.getElementById('prod-price').value = '';
-                document.getElementById('prod-stock').value = '';
+                e.target.reset();
+                document.getElementById('size-inputs-container').classList.add('hidden');
                 showToast("Product added successfully!");
             } catch (err) { 
                 showToast("Error: " + err.message); 
@@ -1355,15 +1559,29 @@
             let html = '';
             products.filter(p => p.name.toLowerCase().includes(search)).forEach(p => {
                 const catName = categories.find(c => c.id === p.categoryId)?.name || 'Unknown';
-                const stockClass = p.stock < 5 ? 'text-red-500 font-bold' : '';
+                const tag = p.isCustom ? `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded ml-2">Custom</span>` : '';
+                const stockClass = (p.stock < 5 && !p.isCustom) ? 'text-red-500 font-bold' : '';
                 const buyPriceStr = p.buyPrice ? formatCur(p.buyPrice) : '-';
+
+                // 🌟 NEW FEATURE: Display Size Breakdown
+                let stockDisplay = p.stock;
+                if(p.hasSizes && p.sizes) {
+                    let sArr = [];
+                    if(p.sizes.S > 0) sArr.push(`S:${p.sizes.S}`);
+                    if(p.sizes.M > 0) sArr.push(`M:${p.sizes.M}`);
+                    if(p.sizes.L > 0) sArr.push(`L:${p.sizes.L}`);
+                    if(p.sizes.XL > 0) sArr.push(`XL:${p.sizes.XL}`);
+                    if(p.sizes.XXL > 0) sArr.push(`XXL:${p.sizes.XXL}`);
+                    stockDisplay = `${p.stock} <span class="text-[11px] font-normal opacity-70 block mt-0.5">(${sArr.join(', ') || 'No size stock'})</span>`;
+                }
+
                 html += `
-                    <tr class="hover:bg-[var(--border-color)] hover:bg-opacity-20 transition-colors">
-                        <td class="p-3 font-medium">${p.name}</td>
+                    <tr class="hover:bg-[var(--border-color)] hover:bg-opacity-20 transition-colors border-b border-[var(--border-color)]">
+                        <td class="p-3 font-medium">${p.name} ${tag}</td>
                         <td class="p-3 opacity-80">${catName}</td>
                         <td class="p-3 text-blue-500 opacity-80">${buyPriceStr}</td>
                         <td class="p-3 font-bold">${formatCur(p.price)}</td>
-                        <td class="p-3 ${stockClass}">${p.stock}</td>
+                        <td class="p-3 ${stockClass}">${stockDisplay}</td>
                         <td class="p-3 text-right">
                             <button onclick="window.deleteProduct('${p.id}')" class="text-red-500 hover:text-red-700 bg-red-500/10 w-8 h-8 rounded-lg">
                                 <i class="fas fa-trash"></i>
@@ -1402,7 +1620,7 @@
 
             let html = '';
             filtered.forEach(p => {
-                const isOutOfStock = p.stock <= 0;
+                const isOutOfStock = p.stock <= 0 && !p.isCustom;
                 html += `
                     <div onclick="${isOutOfStock ? '' : `window.addToCart('${p.id}')`}" class="panel p-3 md:p-4 rounded-2xl shadow-sm cursor-pointer hover:shadow-md transition-all border border-transparent hover:border-primary flex flex-col justify-between h-28 md:h-32 touch-action-manipulation ${isOutOfStock ? 'opacity-40 grayscale cursor-not-allowed' : 'active:scale-95'}">
                         <div>
@@ -1416,70 +1634,170 @@
             grid.innerHTML = html;
         }
 
+        // 🌟 FEATURE 1 & NEW SIZES: Add to Cart Logic
         window.addToCart = function(productId) {
             const product = products.find(p => p.id === productId);
-            if (!product || product.stock <= 0) return;
+            if (!product || (product.stock <= 0 && !product.isCustom)) return;
 
-            const existing = cart.find(item => item.id === productId);
+            if (product.isCustom) {
+                document.getElementById('custom-product-id').value = productId;
+                document.getElementById('lbl-custom-title').textContent = "Customize: " + product.name;
+                document.getElementById('custom-size').value = ""; document.getElementById('custom-name').value = "";
+                document.getElementById('custom-number').value = ""; document.getElementById('custom-extra').value = "";
+                document.getElementById('custom-item-modal').classList.remove('hidden');
+                return;
+            }
+
+            if (product.hasSizes && product.sizes) {
+                document.getElementById('pos-size-product-id').value = productId;
+                document.getElementById('lbl-pos-size-title').textContent = "Select Size: " + product.name;
+                let btnsHtml = '';
+                ['S', 'M', 'L', 'XL', 'XXL'].forEach(s => {
+                    let sQty = product.sizes[s] || 0;
+                    if(sQty > 0) {
+                        btnsHtml += `<button onclick="confirmSizeAddToCart('${s}')" class="btn-primary py-2 rounded-lg font-bold flex flex-col items-center"><span class="text-sm">${s}</span><span class="text-[9px] opacity-70">${sQty} left</span></button>`;
+                    } else {
+                        btnsHtml += `<button disabled class="bg-gray-200 text-gray-400 py-2 rounded-lg font-bold flex flex-col items-center cursor-not-allowed"><span class="text-sm">${s}</span><span class="text-[9px]">0</span></button>`;
+                    }
+                });
+                document.getElementById('pos-size-buttons').innerHTML = btnsHtml;
+                document.getElementById('pos-size-modal').classList.remove('hidden');
+                return;
+            }
+
+            const existing = cart.find(item => item.productId === productId && !item.customNote);
             if (existing) {
-                if (existing.qty < product.stock) {
-                    existing.qty += 1;
-                } else {
-                    showToast("Not enough stock!");
-                    return;
+                if (existing.qty < product.stock) { 
+                    existing.qty += 1; 
+                } else { 
+                    showToast("Not enough stock!"); 
+                    return; 
                 }
             } else {
-                cart.push({ ...product, qty: 1 });
+                cart.push({ cartId: Date.now().toString() + Math.random(), productId: product.id, name: product.name, price: product.price, qty: 1, customNote: '' });
             }
             updateCartUI();
         };
 
-        window.updateCartQty = function(productId, delta) {
-            const index = cart.findIndex(item => item.id === productId);
-            if (index === -1) return;
-            
-            const product = products.find(p => p.id === productId);
-            const newQty = cart[index].qty + delta;
+        // 🌟 FEATURE: Confirm Size for POS
+        window.confirmSizeAddToCart = function(selectedSize) {
+            const pid = document.getElementById('pos-size-product-id').value;
+            const product = products.find(p => p.id === pid);
+            if (!product) return;
 
-            if (newQty <= 0) {
-                cart.splice(index, 1);
-            } else if (product && newQty > product.stock) {
-                showToast("Cannot exceed available stock!");
+            const existing = cart.find(item => item.productId === pid && item.selectedSize === selectedSize && !item.customNote);
+            if (existing) {
+                if (existing.qty < product.sizes[selectedSize]) { 
+                    existing.qty += 1; 
+                } else { 
+                    showToast("Not enough stock for this size!"); 
+                    return; 
+                }
             } else {
-                cart[index].qty = newQty;
+                cart.push({ 
+                    cartId: Date.now().toString() + Math.random(), 
+                    productId: product.id, 
+                    name: product.name, 
+                    price: product.price, 
+                    qty: 1, 
+                    customNote: 'Size: ' + selectedSize,
+                    selectedSize: selectedSize 
+                });
+            }
+            document.getElementById('pos-size-modal').classList.add('hidden');
+            updateCartUI();
+        };
+
+        window.closeCustomModal = function() { document.getElementById('custom-item-modal').classList.add('hidden'); };
+        
+        window.confirmCustomAddToCart = function() {
+            const pid = document.getElementById('custom-product-id').value;
+            const product = products.find(p => p.id === pid);
+            if (!product) return;
+
+            let notes = [];
+            const size = document.getElementById('custom-size').value;
+            const name = document.getElementById('custom-name').value.trim();
+            const num = document.getElementById('custom-number').value.trim();
+            const extra = document.getElementById('custom-extra').value.trim();
+
+            if(size) notes.push("Size: " + size);
+            if(name) notes.push("Name: " + name);
+            if(num) notes.push("No: " + num);
+            if(extra) notes.push("Note: " + extra);
+
+            cart.push({
+                cartId: Date.now().toString() + Math.random(), productId: product.id, name: product.name, 
+                price: product.price, qty: 1, customNote: notes.join(' | ')
+            });
+            closeCustomModal(); updateCartUI();
+        };
+
+        // FEATURE 2: Price Override
+        window.overridePrice = function(cartId) {
+            const item = cart.find(i => i.cartId === cartId);
+            if(!item) return;
+            const newPrice = prompt(`'${item.name}' ၏ ဈေးနှုန်းအသစ်ကို ရိုက်ထည့်ပါ (ယခု: ${item.price})`, item.price);
+            if (newPrice !== null && !isNaN(newPrice) && newPrice !== "") {
+                item.price = Number(newPrice);
+                updateCartUI();
+            }
+        };
+
+        // FEATURE 3: Remove from Cart
+        window.removeFromCart = function(cartId) {
+            cart = cart.filter(i => i.cartId !== cartId);
+            updateCartUI();
+        };
+
+        window.updateCartQty = function(cartId, delta) {
+            const item = cart.find(i => i.cartId === cartId);
+            if (!item) return;
+            const product = products.find(p => p.id === item.productId);
+            
+            if (item.qty + delta <= 0) {
+                removeFromCart(cartId);
+            } else if (product && !product.isCustom) {
+                let limit = product.stock;
+                if(product.hasSizes && item.selectedSize && product.sizes[item.selectedSize] !== undefined) {
+                    limit = product.sizes[item.selectedSize];
+                }
+                if(item.qty + delta > limit) {
+                    showToast("Cannot exceed available stock!");
+                } else {
+                    item.qty += delta;
+                }
+            } else {
+                item.qty += delta;
             }
             updateCartUI();
         };
 
         function updateCartUI() {
             const container = document.getElementById('cart-items');
-            let total = 0;
-            let itemCount = 0;
+            let total = 0; let itemCount = 0;
             
             if (cart.length === 0) {
                 container.innerHTML = '<div class="text-center opacity-50 py-12"><i class="fas fa-shopping-basket text-4xl mb-3"></i><br>Cart is empty</div>';
             } else {
                 let html = '';
                 cart.forEach(item => {
-                    const itemTotal = item.price * item.qty;
-                    total += itemTotal;
-                    itemCount += item.qty;
-                    
-                    const liveProduct = products.find(p => p.id === item.id);
-                    const isError = !liveProduct || item.qty > liveProduct.stock;
-
+                    total += (item.price * item.qty); itemCount += item.qty;
                     html += `
-                        <div class="flex flex-col gap-2 p-3 bg-[var(--bg-color)] rounded-xl ${isError ? 'border border-red-500' : ''}">
-                            <div class="flex justify-between items-start">
-                                <span class="font-medium text-xs md:text-sm leading-tight pr-2">${item.name}</span>
-                                <button onclick="window.updateCartQty('${item.id}', -${item.qty})" class="text-red-500 text-xs p-1"><i class="fas fa-trash"></i></button>
+                        <div class="flex flex-col gap-2 p-3 bg-[var(--bg-color)] rounded-xl border border-[var(--border-color)]">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <span class="font-medium text-xs md:text-sm leading-tight">${item.name}</span>
+                                    ${item.customNote ? `<div class="text-[11px] text-gray-500 mt-0.5">${item.customNote}</div>` : ''}
+                                </div>
+                                <button onclick="window.removeFromCart('${item.cartId}')" class="text-red-500 bg-red-500/10 w-7 h-7 rounded flex items-center justify-center flex-shrink-0 active:scale-90" title="Remove"><i class="fas fa-trash-alt text-xs"></i></button>
                             </div>
                             <div class="flex justify-between items-center mt-1">
-                                <span class="font-bold text-primary text-xs md:text-sm">${formatCur(item.price)}</span>
-                                <div class="flex items-center gap-2 bg-[var(--panel-bg)] rounded-lg px-2 py-1 shadow-sm">
-                                    <button onclick="window.updateCartQty('${item.id}', -1)" class="w-6 h-6 flex justify-center items-center rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-xs">-</button>
-                                    <span class="text-xs md:text-sm font-medium w-6 text-center ${isError ? 'text-red-500' : ''}">${item.qty}</span>
-                                    <button onclick="window.updateCartQty('${item.id}', 1)" class="w-6 h-6 flex justify-center items-center rounded bg-primary text-white text-xs">+</button>
+                                <span onclick="window.overridePrice('${item.cartId}')" class="font-bold text-primary text-xs md:text-sm cursor-pointer hover:underline bg-primary/10 px-2 py-1 rounded" title="Change Price">${formatCur(item.price)} <i class="fas fa-edit text-[10px]"></i></span>
+                                <div class="flex items-center gap-2 bg-[var(--panel-bg)] rounded-lg px-2 py-1 shadow-sm border border-[var(--border-color)]">
+                                    <button onclick="window.updateCartQty('${item.cartId}', -1)" class="w-6 h-6 flex justify-center items-center bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-xs rounded">-</button>
+                                    <span class="text-xs md:text-sm font-bold w-6 text-center">${item.qty}</span>
+                                    <button onclick="window.updateCartQty('${item.cartId}', 1)" class="w-6 h-6 flex justify-center items-center bg-primary text-white text-xs rounded">+</button>
                                 </div>
                             </div>
                         </div>
@@ -1487,88 +1805,97 @@
                 });
                 container.innerHTML = html;
             }
-
-            document.getElementById('cart-total').textContent = formatCur(total);
-            document.getElementById('cart-count').textContent = `${itemCount} items`;
-            
-            document.getElementById('mobile-cart-total').textContent = formatCur(total);
-            document.getElementById('mobile-cart-badge').textContent = itemCount;
-            document.getElementById('lbl-cart-items-count').textContent = `${itemCount} items`;
+            document.getElementById('cart-total').textContent = formatCur(total); document.getElementById('cart-count').textContent = `${itemCount} items`;
+            document.getElementById('mobile-cart-total').textContent = formatCur(total); document.getElementById('mobile-cart-badge').textContent = itemCount; document.getElementById('lbl-cart-items-count').textContent = `${itemCount} items`;
         }
 
         window.checkout = async function() {
             if (!currentUser || cart.length === 0) return;
             
-            let valid = true;
-            for (let item of cart) {
-                const liveProd = products.find(p => p.id === item.id);
-                if (!liveProd || item.qty > liveProd.stock) {
-                    valid = false;
-                    break;
+            // Check collective stock for normal items
+            let stockReq = {};
+            cart.forEach(i => {
+                if (!stockReq[i.productId]) stockReq[i.productId] = { total: 0, sizes: {} };
+                stockReq[i.productId].total += i.qty;
+                if(i.selectedSize) {
+                    stockReq[i.productId].sizes[i.selectedSize] = (stockReq[i.productId].sizes[i.selectedSize] || 0) + i.qty;
                 }
-            }
-
-            if (!valid) {
-                showToast("Cart contains items exceeding stock.");
-                return;
+            });
+            
+            for (let pid in stockReq) {
+                const liveProd = products.find(p => p.id === pid);
+                if (liveProd && !liveProd.isCustom) {
+                    if (stockReq[pid].total > liveProd.stock) {
+                        showToast(`'${liveProd.name}' exceeds available stock!`); return;
+                    }
+                    if(liveProd.hasSizes) {
+                        for(let s in stockReq[pid].sizes) {
+                            if(stockReq[pid].sizes[s] > (liveProd.sizes[s] || 0)) {
+                                showToast(`'${liveProd.name}' Size ${s} exceeds available stock!`); return;
+                            }
+                        }
+                    }
+                }
             }
 
             const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             let totalCost = 0;
             cart.forEach(item => {
-                const liveProd = products.find(p => p.id === item.id);
-                const itemBuyPrice = (liveProd && liveProd.buyPrice) ? liveProd.buyPrice : 0;
-                totalCost += (itemBuyPrice * item.qty);
+                const liveProd = products.find(p => p.id === item.productId);
+                totalCost += ((liveProd ? liveProd.buyPrice : 0) * item.qty);
             });
 
             const saleData = {
-                items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
-                total: total,
-                totalCost: totalCost,
-                profit: total - totalCost,
-                timestamp: new Date().toISOString(),
-                cashierId: currentUser.uid
+                items: cart.map(i => ({ id: i.productId, name: i.name, price: i.price, qty: i.qty, customNote: i.customNote, selectedSize: i.selectedSize })),
+                total: total, totalCost: totalCost, profit: total - totalCost,
+                timestamp: new Date().toISOString(), cashierId: currentUser.uid
             };
 
             try {
-                for (const item of cart) {
-                    const productRef = doc(db, 'shops', currentUser.uid, 'products', item.id);
-                    const liveProd = products.find(p => p.id === item.id);
-                    const newStock = Math.max(0, liveProd.stock - item.qty);
-                    await updateDoc(productRef, { stock: newStock });
+                // Deduct stock (Including Size Logic)
+                for (let pid in stockReq) {
+                    const pRef = doc(db, 'shops', currentUser.uid, 'products', pid);
+                    const liveProd = products.find(p => p.id === pid);
+                    if (liveProd && !liveProd.isCustom) {
+                        let updateData = { stock: Math.max(0, liveProd.stock - stockReq[pid].total) };
+                        if (liveProd.hasSizes) {
+                            let newSizes = { ...liveProd.sizes };
+                            for(let s in stockReq[pid].sizes) {
+                                if(newSizes[s] !== undefined) newSizes[s] = Math.max(0, newSizes[s] - stockReq[pid].sizes[s]);
+                            }
+                            updateData.sizes = newSizes;
+                        }
+                        await updateDoc(pRef, updateData);
+                    }
                 }
-
-                await addDoc(collection(db, 'shops', currentUser.uid, 'sales'), saleData);
                 
-                if (typeof window.printBluetoothReceipt === "function") {
-                    window.printBluetoothReceipt(saleData);
-                }
+                // Add to history
+                const saleDoc = await addDoc(collection(db, 'shops', currentUser.uid, 'sales'), saleData);
+                saleData.id = saleDoc.id; // Inject ID for printing
 
                 toggleMobileCart(false);
                 showReceipt(saleData);
-                
-                cart = [];
-                updateCartUI();
+                cart = []; updateCartUI();
                 showToast("Checkout successful!");
-            } catch (err) {
-                showToast("Checkout failed: " + err.message);
-            }
+            } catch (err) { showToast("Error: " + err.message); }
         };
 
         // Receipts
         window.showReceipt = function(saleData) {
+            currentViewingSale = saleData;
             const content = document.getElementById('receipt-content');
             let dateStr = new Date(saleData.timestamp).toLocaleString();
             let itemsHtml = '';
             
             saleData.items.forEach(item => {
                 itemsHtml += `
-                    <div class="flex justify-between py-1 text-xs md:text-sm border-b border-gray-100">
-                        <div>
+                    <div class="flex justify-between py-2 text-xs md:text-sm border-b border-gray-100">
+                        <div class="pr-2">
                             <span class="font-medium">${item.name}</span>
-                            <span class="text-[11px] text-gray-500 block">${item.qty} x ${formatCur(item.price)}</span>
+                            ${item.customNote ? `<span class="block text-[11px] text-gray-500 mt-0.5">${item.customNote}</span>` : ''}
+                            <span class="text-[11px] text-gray-400 block mt-0.5">${item.qty} x ${formatCur(item.price)}</span>
                         </div>
-                        <span class="font-medium">${formatCur(item.qty * item.price)}</span>
+                        <span class="font-bold">${formatCur(item.qty * item.price)}</span>
                     </div>
                 `;
             });
@@ -1579,7 +1906,7 @@
                     <p class="text-xs text-gray-500">Sales Voucher</p>
                     <p class="text-[11px] text-gray-400 mt-1">${dateStr}</p>
                 </div>
-                <div class="border-t border-b border-gray-200 py-2 mb-4 space-y-1">
+                <div class="border-t border-b border-gray-200 py-2 mb-4">
                     ${itemsHtml}
                 </div>
                 <div class="flex justify-between items-center text-base md:text-lg font-bold">
@@ -1588,15 +1915,85 @@
                 </div>
                 <p class="text-center text-[11px] text-gray-400 mt-6">Thank you for shopping with us!</p>
             `;
-
             document.getElementById('receipt-modal').classList.remove('hidden');
+        };
+
+        // FEATURE 1: Factory Print
+        window.printFactoryMode = function() {
+            if(!currentViewingSale) return;
+            const content = document.getElementById('receipt-content');
+            let itemsHtml = '';
+            currentViewingSale.items.forEach(item => {
+                itemsHtml += `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-2 text-sm font-medium pr-2">${item.name}
+                            ${item.customNote ? `<div class="text-xs text-gray-600 mt-1">${item.customNote}</div>` : ''}
+                        </td>
+                        <td class="py-2 text-right text-base font-bold whitespace-nowrap">${item.qty} ထည်</td>
+                    </tr>`;
+            });
+
+            content.innerHTML = `
+                <div class="text-center mb-5 border-b-2 border-black pb-3">
+                    <h2 class="text-xl font-bold uppercase tracking-wider">FACTORY ORDER</h2>
+                    <p class="text-sm font-semibold mt-1">${new Date(currentViewingSale.timestamp).toLocaleDateString()}</p>
+                </div>
+                <table class="w-full text-left border-collapse">
+                    <thead><tr class="border-b-2 border-black"><th class="pb-2">Items Detail</th><th class="pb-2 text-right">Qty</th></tr></thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+                <div class="mt-8 text-center text-xs opacity-50">*** Print output for workshop use ***</div>
+            `;
+            setTimeout(() => window.print(), 100);
         };
 
         window.closeReceipt = function() {
             document.getElementById('receipt-modal').classList.add('hidden');
+            currentViewingSale = null;
         };
 
-        // Sales History Handler
+        // FEATURE 4: Void Sale & Restock (Updated with Size Logic)
+        window.voidSale = async function(saleId) {
+            if (!currentUser) return;
+            if (!confirm("ဤအရောင်းစာရင်းကို ပယ်ဖျက်ပြီး ပစ္စည်းအရေအတွက်(Stock) များအား ပြန်လည်ပေါင်းထည့်မည်မှာ သေချာပါသလား?")) return;
+            try {
+                const sale = sales.find(s => s.id === saleId);
+                if(!sale) return;
+
+                // Restock normal items
+                let restockReq = {}; let restockSizes = {};
+                sale.items.forEach(i => {
+                    restockReq[i.id] = (restockReq[i.id] || 0) + i.qty;
+                    if(i.selectedSize) {
+                        if(!restockSizes[i.id]) restockSizes[i.id] = {};
+                        restockSizes[i.id][i.selectedSize] = (restockSizes[i.id][i.selectedSize] || 0) + i.qty;
+                    }
+                });
+
+                for (let pid in restockReq) {
+                    const pRef = doc(db, 'shops', currentUser.uid, 'products', pid);
+                    const pSnap = await getDoc(pRef);
+                    if (pSnap.exists() && !pSnap.data().isCustom) {
+                        let updateData = { stock: pSnap.data().stock + restockReq[pid] };
+                        if (pSnap.data().hasSizes && restockSizes[pid]) {
+                            let newSizes = { ...pSnap.data().sizes };
+                            for(let s in restockSizes[pid]) {
+                                if(newSizes[s] !== undefined) newSizes[s] += restockSizes[pid][s];
+                            }
+                            updateData.sizes = newSizes;
+                        }
+                        await updateDoc(pRef, updateData);
+                    }
+                }
+                
+                // Delete the sale document
+                await deleteDoc(doc(db, 'shops', currentUser.uid, 'sales', saleId));
+                showToast("Voucher အား ပယ်ဖျက်ပြီးပါပြီ (Void Successful)");
+            } catch(e) {
+                showToast("Error voiding sale: " + e.message);
+            }
+        };
+
         function renderHistoryList() {
             const listEl = document.getElementById('history-list');
             const search = document.getElementById('search-history').value.toLowerCase();
@@ -1622,15 +2019,14 @@
                 const profitStr = formatCur(s.profit !== undefined ? s.profit : (s.total - (s.totalCost || 0)));
                 
                 html += `
-                    <tr class="hover:bg-[var(--border-color)] hover:bg-opacity-20 transition-colors">
+                    <tr class="hover:bg-[var(--border-color)] hover:bg-opacity-20 transition-colors border-b border-[var(--border-color)]">
                         <td class="p-3 font-medium whitespace-nowrap">${dateStr}</td>
                         <td class="p-3 max-w-[200px] truncate" title="${itemsSummary}">${itemsSummary}</td>
                         <td class="p-3 text-green-500 font-semibold">${profitStr}</td>
                         <td class="p-3 font-bold">${formatCur(s.total)}</td>
-                        <td class="p-3 text-right whitespace-nowrap">
-                            <button onclick='window.reprintSale(${JSON.stringify(s)})' class="btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold">
-                                <i class="fas fa-print mr-1"></i> Voucher
-                            </button>
+                        <td class="p-3 text-right whitespace-nowrap flex justify-end gap-2 items-center">
+                            <button onclick='window.reprintSale(${JSON.stringify(s)})' class="btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm">Voucher</button>
+                            <button onclick="window.voidSale('${s.id}')" class="text-red-500 bg-red-500/10 px-2 py-1.5 rounded-lg hover:bg-red-500/20 active:scale-95" title="Void & Restock"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
                 `;
@@ -1662,7 +2058,7 @@
             document.getElementById('dash-total-profit').textContent = formatCur(totalProfit);
             document.getElementById('dash-items-sold').textContent = totalItemsSold;
 
-            const lowStockItems = products.filter(p => p.stock < 5);
+            const lowStockItems = products.filter(p => p.stock < 5 && !p.isCustom);
             document.getElementById('dash-low-stock-count').textContent = lowStockItems.length;
 
             let html = '';
@@ -2029,7 +2425,7 @@
 
             const allTotalRevenue = sales.reduce((sum, s) => sum + s.total, 0);
             const allTotalProfit = sales.reduce((sum, s) => sum + (s.profit !== undefined ? s.profit : (s.total - (s.totalCost || 0))), 0);
-            const lowStockItems = products.filter(p => p.stock < 5);
+            const lowStockItems = products.filter(p => p.stock < 5 && !p.isCustom);
 
             if (q.includes('ယနေ့') || q.includes('ဒီနေ့') || q.includes('today')) {
                 return `📊 <b>ယနေ့ အရောင်းအခြေအနေ:</b>\n• အရောင်းအကြိမ်ရေ: <b>${todaySales.length}</b> ကြိမ်\n• ရောင်းရငွေ: <b>${formatCur(todayTotal)}</b>\n• ရရှိသည့်အမြတ်: <b>${formatCur(todayProfit)}</b>`;
@@ -2054,6 +2450,258 @@
             return `🤖 <b>ဆိုင်၏ အချက်အလက်များ မေးမြန်းနိုင်ပါသည်:</b>\n၁။ "ယနေ့ အရောင်းအခြေအနေ"\n၂။ "လက်ကျန်နည်းနေတဲ့ ပစ္စည်းများ"\n၃။ "စုစုပေါင်း အမြတ်ငွေ"\nစသည်ဖြင့် အလွယ်တကူ ရိုက်နှိပ် မေးမြန်းနိုင်ပါသည် ခင်ဗျာ။`;
         }
 
+        // ==========================================
+        // 🌟 NEW: TEAM ORDERS WORKFLOW (NO HTML/LOGIN CHANGES) 🌟
+        // ==========================================
+
+        window.openTeamOrderModal = function() {
+            const selectEl = document.getElementById('team-product');
+            let opts = '<option value="">ရွေးချယ်ပါ</option>';
+            products.forEach(p => opts += `<option value="${p.id}" data-price="${p.price}">${p.name} (လက်ကျန်: ${p.stock})</option>`);
+            selectEl.innerHTML = opts;
+            document.getElementById('team-order-form').reset();
+            document.getElementById('team-rows-container').innerHTML = '<p class="text-xs opacity-50 text-center py-2">အရေအတွက် (Qty) ရိုက်ထည့်ပါက အမည်၊ ဆိုက်၊ နံပါတ် ထည့်ရန် အကွက်များ အလိုအလျောက် ပေါ်လာပါမည်။</p>';
+            calculateTeamTotals();
+            document.getElementById('team-order-modal').classList.remove('hidden');
+        };
+
+        window.closeTeamOrderModal = function() {
+            document.getElementById('team-order-modal').classList.add('hidden');
+        };
+
+        document.getElementById('team-product').addEventListener('change', function(e) {
+            const selectedOpt = e.target.options[e.target.selectedIndex];
+            if(selectedOpt && selectedOpt.dataset.price) {
+                document.getElementById('team-unit-price').value = selectedOpt.dataset.price;
+                calculateTeamTotals();
+            }
+        });
+
+        window.generateTeamRows = function() {
+            const qty = parseInt(document.getElementById('team-qty').value) || 0;
+            const container = document.getElementById('team-rows-container');
+            if (qty <= 0) { container.innerHTML = ''; return; }
+            if (qty > 100) { showToast("Max limit 100 items"); return; }
+            
+            let html = '<div class="space-y-2">';
+            for(let i=1; i<=qty; i++) {
+                html += `
+                <div class="flex items-center gap-2 team-row">
+                    <span class="text-xs font-bold w-6 opacity-50 text-center">${i}.</span>
+                    <input type="text" class="row-name input-field flex-1 px-2 py-1.5 rounded-lg text-xs" placeholder="အမည် (Name)">
+                    <select class="row-size input-field w-16 px-1 py-1.5 rounded-lg text-xs">
+                        <option value="">Size</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option>
+                    </select>
+                    <input type="text" class="row-num input-field w-16 px-2 py-1.5 rounded-lg text-xs" placeholder="No">
+                </div>`;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+            calculateTeamTotals();
+        };
+
+        window.calculateTeamTotals = function() {
+            const qty = parseInt(document.getElementById('team-qty').value) || 0;
+            const price = parseInt(document.getElementById('team-unit-price').value) || 0;
+            const total = qty * price;
+            const deposit = parseInt(document.getElementById('team-deposit').value) || 0;
+            const balance = total - deposit;
+            
+            document.getElementById('team-total-display').textContent = formatCur(total);
+            document.getElementById('team-balance-display').textContent = formatCur(balance > 0 ? balance : 0);
+        };
+
+        document.getElementById('team-order-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+            const customer = document.getElementById('team-customer').value.trim();
+            const productId = document.getElementById('team-product').value;
+            const qty = parseInt(document.getElementById('team-qty').value) || 0;
+            const unitPrice = parseInt(document.getElementById('team-unit-price').value) || 0;
+            const deposit = parseInt(document.getElementById('team-deposit').value) || 0;
+            const total = qty * unitPrice;
+
+            if(!productId) { showToast("ပစ္စည်းရွေးချယ်ပါ"); return; }
+            
+            // Check stock
+            const product = products.find(p => p.id === productId);
+            if(product && !product.isCustom && qty > product.stock) {
+                showToast(`လက်ကျန်မလောက်ပါ! (ရှိ: ${product.stock})`); return;
+            }
+
+            // Gather rows
+            let rowData = [];
+            document.querySelectorAll('.team-row').forEach(row => {
+                rowData.push({
+                    name: row.querySelector('.row-name').value.trim(),
+                    size: row.querySelector('.row-size').value,
+                    num: row.querySelector('.row-num').value.trim()
+                });
+            });
+
+            // 🌟 FEATURE UPDATE: Check sizes stock specifically for Team Order
+            if(product && product.hasSizes && !product.isCustom) {
+                let sizeCount = {}; 
+                rowData.forEach(r => { if(r.size) sizeCount[r.size] = (sizeCount[r.size]||0) + 1; });
+                for(let s in sizeCount) {
+                    if(sizeCount[s] > (product.sizes[s] || 0)) { 
+                        showToast(`Size '${s}' လက်ကျန်မလောက်ပါ! (ရှိ: ${product.sizes[s] || 0})`); 
+                        return; 
+                    }
+                }
+            }
+
+            // Build item for sales history
+            let customNoteStr = rowData.map(r => `${r.name || '-'}(${r.size || '-'},#${r.num || '-'})`).join(', ');
+            let saleItem = { id: product.id, name: product.name, price: unitPrice, qty: qty, customNote: customNoteStr };
+
+            const orderData = {
+                customer: customer,
+                items: [saleItem],
+                total: total,
+                deposit: deposit,
+                balance: total - deposit,
+                rowData: rowData,
+                timestamp: new Date().toISOString(),
+                status: 'pending'
+            };
+
+            try {
+                // 🌟 FEATURE UPDATE: Deduct stock immediately (Including size breakdown)
+                if(product && !product.isCustom) {
+                    let updateData = { stock: Math.max(0, product.stock - qty) };
+                    if (product.hasSizes) {
+                        let newSizes = { ...product.sizes };
+                        rowData.forEach(r => { if (r.size && newSizes[r.size] !== undefined) newSizes[r.size] = Math.max(0, newSizes[r.size] - 1); });
+                        updateData.sizes = newSizes;
+                    }
+                    await updateDoc(doc(db, 'shops', currentUser.uid, 'products', product.id), updateData);
+                }
+                // Save Order
+                await addDoc(collection(db, 'shops', currentUser.uid, 'orders'), orderData);
+                closeTeamOrderModal();
+                showToast("Team Order အား မှတ်တမ်းတင်ပြီးပါပြီ (Stock မှ နုတ်ပြီးပါပြီ)");
+            } catch(err) {
+                showToast("Error saving order: " + err.message);
+            }
+        });
+
+        function renderOrdersList() {
+            const listEl = document.getElementById('active-orders-list');
+            if (activeOrders.length === 0) {
+                listEl.innerHTML = '<div class="text-center opacity-50 py-12">လက်ရှိ လုပ်ဆောင်ဆဲ အော်ဒါ မရှိပါ။ (No active orders)</div>';
+                return;
+            }
+            
+            let html = '';
+            activeOrders.forEach(o => {
+                const dateStr = new Date(o.timestamp).toLocaleDateString();
+                const item = o.items[0];
+                html += `
+                <div class="panel p-4 rounded-2xl shadow-sm border-l-4 border-primary">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-sm md:text-base"><i class="fas fa-user-circle text-gray-400 mr-1"></i> ${o.customer}</h3>
+                            <p class="text-[11px] opacity-70">${dateStr} | ${item.name} (${item.qty} ထည်)</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-gray-500 line-through">Total: ${formatCur(o.total)}</p>
+                            <p class="text-sm font-bold text-red-500">Balance: ${formatCur(o.balance)}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[var(--border-color)]">
+                        <button onclick="window.copyFactoryList('${o.id}')" class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm active:scale-95">
+                            <i class="fas fa-copy"></i> စာရိုက်ဆိုင်သို့ပို့ရန်
+                        </button>
+                        <button onclick="window.completeTeamOrder('${o.id}')" class="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm active:scale-95 ml-auto">
+                            <i class="fas fa-check-circle"></i> ငွေအပြည့်ချေပြီးပါပြီ (Complete)
+                        </button>
+                        <button onclick="window.voidTeamOrder('${o.id}')" class="text-red-500 bg-red-50 dark:bg-red-950 px-2 py-1.5 rounded-lg active:scale-95" title="Void & Restock">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>`;
+            });
+            listEl.innerHTML = html;
+        }
+
+        window.copyFactoryList = function(orderId) {
+            const order = activeOrders.find(o => o.id === orderId);
+            if(!order) return;
+            const item = order.items[0];
+            let text = `📦 Order: ${item.name} (${item.qty} ထည်)\n====================\n`;
+            order.rowData.forEach((r, i) => {
+                text += `${i+1}။ ${r.name || '-'} [Size: ${r.size || '-'}, No: ${r.num || '-'}]\n`;
+            });
+            text += `====================\nCustomer: ${order.customer}`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("စက်ရုံပို့စာရင်းအား Copy ကူးပြီးပါပြီ! Messenger တွင် Paste ချပို့နိုင်ပါပြီ။");
+            }).catch(() => showToast("Copy ကူးခြင်း မအောင်မြင်ပါ။"));
+        };
+
+        window.completeTeamOrder = async function(orderId) {
+            if(!confirm("ဤအော်ဒါအား ကျန်ငွေအပြည့်ချေပြီးပါပြီ။ အရောင်းမှတ်တမ်း (History) ထဲသို့ ပြောင်းရွှေ့မည်မှာ သေချာပါသလား?")) return;
+            const order = activeOrders.find(o => o.id === orderId);
+            if(!order) return;
+
+            const item = order.items[0];
+            const liveProd = products.find(p => p.id === item.id);
+            const totalCost = (liveProd ? liveProd.buyPrice : 0) * item.qty;
+
+            const saleData = {
+                items: order.items,
+                total: order.total,
+                totalCost: totalCost,
+                profit: order.total - totalCost,
+                timestamp: new Date().toISOString(),
+                cashierId: currentUser.uid,
+                isTeamOrder: true,
+                customer: order.customer
+            };
+
+            try {
+                // Add to Sales History
+                await addDoc(collection(db, 'shops', currentUser.uid, 'sales'), saleData);
+                // Delete from active Orders
+                await deleteDoc(doc(db, 'shops', currentUser.uid, 'orders', orderId));
+                showToast("အော်ဒါပြီးစီးသွားပါပြီ! အရောင်းမှတ်တမ်းတွင် ဝင်ရောက်ကြည့်ရှုနိုင်ပါသည်။");
+            } catch(e) {
+                showToast("Error completing order: " + e.message);
+            }
+        };
+
+        // 🌟 FEATURE UPDATE: Void Team Order with Size Restocking
+        window.voidTeamOrder = async function(orderId) {
+            if(!confirm("ဤအော်ဒါကို ပယ်ဖျက်ပြီး ပစ္စည်းအရေအတွက်များအား Stock ထဲသို့ ပြန်ပေါင်းထည့်မည်မှာ သေချာပါသလား?")) return;
+            try {
+                const order = activeOrders.find(o => o.id === orderId);
+                if(!order) return;
+
+                // Restock
+                const item = order.items[0];
+                const pRef = doc(db, 'shops', currentUser.uid, 'products', item.id);
+                const pSnap = await getDoc(pRef);
+                if (pSnap.exists() && !pSnap.data().isCustom) {
+                    let updateData = { stock: pSnap.data().stock + item.qty };
+                    
+                    if (pSnap.data().hasSizes) {
+                        let newSizes = { ...pSnap.data().sizes };
+                        order.rowData.forEach(r => { 
+                            if (r.size && newSizes[r.size] !== undefined) {
+                                newSizes[r.size] += 1; 
+                            }
+                        });
+                        updateData.sizes = newSizes;
+                    }
+
+                    await updateDoc(pRef, updateData);
+                }
+                
+                await deleteDoc(doc(db, 'shops', currentUser.uid, 'orders', orderId));
+                showToast("Team Order အား ပယ်ဖျက်ပြီးပါပြီ (Void & Restocked)");
+            } catch(e) { showToast("Error voiding order: " + e.message); }
+        };
     </script>
 </body>
 </html>
