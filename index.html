@@ -398,7 +398,7 @@
                 </div>
             </section>
 
-            <!-- NEW ORDERS SECTION (Team Order Book) -->
+            <!-- 🌟 FEATURE: NEW ORDERS SECTION (Team Order Book) 🌟 -->
             <section id="orders-section" class="tab-content hidden h-full p-4 md:p-8 overflow-y-auto">
                 <div class="flex flex-wrap gap-3 justify-between items-center mb-4 md:mb-6">
                     <h2 class="text-xl md:text-2xl font-bold">Team Orders / အော်ဒါမှတ်စု</h2>
@@ -450,7 +450,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-[11px] md:text-xs font-medium mb-1" id="lbl-stock">Total Stock</label>
-                                    <input type="number" id="prod-stock" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm">
+                                    <input type="number" id="prod-stock" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm bg-gray-50 dark:bg-gray-800">
                                 </div>
                             </div>
 
@@ -679,9 +679,10 @@
                 <i class="fas fa-calculator text-lg"></i>
                 <span class="text-[10px] font-medium mt-0.5" id="nav-mob-pos">POS</span>
             </button>
+            <!-- 🌟 FEATURE: NEW ORDERS TAB (MOBILE) 🌟 -->
             <button onclick="switchTab('orders')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="orders">
                 <i class="fas fa-clipboard-list text-lg"></i>
-                <span class="text-[10px] font-medium mt-0.5">Orders</span>
+                <span class="text-[10px] font-medium mt-0.5" id="nav-mob-orders">Orders</span>
             </button>
             <button onclick="switchTab('inventory')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="inventory">
                 <i class="fas fa-box-open text-lg"></i>
@@ -695,12 +696,18 @@
                 <i class="fas fa-chart-pie text-lg"></i>
                 <span class="text-[10px] font-medium mt-0.5" id="nav-mob-dash">Stats</span>
             </button>
+            
+            <!-- 🌟 PREVIOUSLY MISSING SETTINGS TAB NOW RESTORED 🌟 -->
+            <button onclick="switchTab('settings')" class="nav-btn-mob flex flex-col items-center justify-center flex-1 py-1 opacity-60" data-target="settings">
+                <i class="fas fa-cog text-lg"></i>
+                <span class="text-[10px] font-medium mt-0.5" id="nav-mob-sett">Settings</span>
+            </button>
         </nav>
     </div>
 
     <!-- Modals -->
 
-    <!-- TEAM ORDER MODAL -->
+    <!-- 🌟 FEATURE: TEAM ORDER MODAL -->
     <div id="team-order-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
         <div class="panel p-5 md:p-6 rounded-2xl shadow-2xl w-full max-w-2xl my-auto">
             <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
@@ -770,7 +777,7 @@
         </div>
     </div>
 
-    <!-- Custom Item Add Modal -->
+    <!-- Custom Item Add Modal (Free Text) -->
     <div id="custom-item-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
         <div class="panel p-6 rounded-2xl shadow-2xl w-full max-w-sm">
             <h3 class="font-bold text-lg mb-4 border-b border-[var(--border-color)] pb-2" id="lbl-custom-title">Customize Item</h3>
@@ -888,6 +895,8 @@
             </button>
         </div>
     </div>
+
+
 
     <!-- Floating AI Assistant Button -->
     <button id="ai-chat-btn" onclick="toggleAIChat()" class="fixed bottom-20 md:bottom-8 right-4 md:right-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white w-12 h-12 md:w-14 md:h-14 rounded-full shadow-2xl flex items-center justify-center text-xl z-[9980] hover:scale-105 active:scale-95 transition-all">
@@ -1758,6 +1767,7 @@
             if (item.qty + delta <= 0) {
                 removeFromCart(cartId);
             } else if (product && !product.isCustom) {
+                // Check stock bounds including selected size logic
                 let limit = product.stock;
                 if(product.hasSizes && item.selectedSize && product.sizes[item.selectedSize] !== undefined) {
                     limit = product.sizes[item.selectedSize];
@@ -1812,7 +1822,7 @@
         window.checkout = async function() {
             if (!currentUser || cart.length === 0) return;
             
-            // Check collective stock for normal items
+            // Collect collective stock requirements mapped by PID and SelectedSize
             let stockReq = {};
             cart.forEach(i => {
                 if (!stockReq[i.productId]) stockReq[i.productId] = { total: 0, sizes: {} };
@@ -1825,7 +1835,7 @@
             for (let pid in stockReq) {
                 const liveProd = products.find(p => p.id === pid);
                 if (liveProd && !liveProd.isCustom) {
-                    if (stockReq[pid].total > liveProd.stock) {
+                    if(stockReq[pid].total > liveProd.stock) {
                         showToast(`'${liveProd.name}' exceeds available stock!`); return;
                     }
                     if(liveProd.hasSizes) {
@@ -1852,7 +1862,7 @@
             };
 
             try {
-                // Deduct stock (Including Size Logic)
+                // 🌟 FEATURE: Smart Stock Deduction (Total and Sizes)
                 for (let pid in stockReq) {
                     const pRef = doc(db, 'shops', currentUser.uid, 'products', pid);
                     const liveProd = products.find(p => p.id === pid);
