@@ -1111,19 +1111,21 @@
             }
         });
 
-        // Data Streams
+        // Data Streams - Multi-Tenant (Scoped to currentUser.uid)
         async function loadData() {
             if (!currentUser) return;
             try {
-                const unsubSettings = onSnapshot(doc(db, 'settings', 'shop_info'), (docSnap) => {
+                const unsubSettings = onSnapshot(doc(db, 'shops', currentUser.uid, 'settings', 'shop_info'), (docSnap) => {
                     if (docSnap.exists()) {
                         shopName = docSnap.data().name || "My Sports Shop";
+                    } else {
+                        shopName = "My Sports Shop";
                     }
                     updateShopNameUI();
                 });
                 unsubscribes.push(unsubSettings);
 
-                const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+                const unsubCategories = onSnapshot(collection(db, 'shops', currentUser.uid, 'categories'), (snapshot) => {
                     categories = [];
                     snapshot.forEach(doc => categories.push({ id: doc.id, ...doc.data() }));
                     renderCategories();
@@ -1131,7 +1133,7 @@
                 });
                 unsubscribes.push(unsubCategories);
 
-                const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+                const unsubProducts = onSnapshot(collection(db, 'shops', currentUser.uid, 'products'), (snapshot) => {
                     products = [];
                     snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
                     renderProductsList();
@@ -1141,7 +1143,7 @@
                 });
                 unsubscribes.push(unsubProducts);
 
-                const unsubSales = onSnapshot(collection(db, 'sales'), (snapshot) => {
+                const unsubSales = onSnapshot(collection(db, 'shops', currentUser.uid, 'sales'), (snapshot) => {
                     sales = [];
                     snapshot.forEach(doc => sales.push({ id: doc.id, ...doc.data() }));
                     sales.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -1212,7 +1214,7 @@
             const newName = document.getElementById('setting-shop-name').value;
             if (!currentUser) return;
             try {
-                await setDoc(doc(db, 'settings', 'shop_info'), { name: newName }, { merge: true });
+                await setDoc(doc(db, 'shops', currentUser.uid, 'settings', 'shop_info'), { name: newName }, { merge: true });
                 showToast("Shop name updated successfully!");
             } catch (err) {
                 showToast("Error updating name: " + err.message);
@@ -1262,7 +1264,7 @@
             const name = document.getElementById('quick-category-name').value.trim();
             if (!name || !currentUser) return;
             try {
-                const docRef = await addDoc(collection(db, 'categories'), { name: name });
+                const docRef = await addDoc(collection(db, 'shops', currentUser.uid, 'categories'), { name: name });
                 closeAddCategoryModal();
                 showToast("Category added successfully!");
                 setTimeout(() => {
@@ -1306,7 +1308,7 @@
         window.deleteCategory = async function(id) {
             if (!currentUser) return;
             try {
-                await deleteDoc(doc(db, 'categories', id));
+                await deleteDoc(doc(db, 'shops', currentUser.uid, 'categories', id));
                 showToast("Category deleted successfully");
             } catch (err) {
                 showToast("Error deleting category: " + err.message);
@@ -1325,7 +1327,7 @@
                 stock: Number(document.getElementById('prod-stock').value)
             };
             try {
-                await addDoc(collection(db, 'products'), data);
+                await addDoc(collection(db, 'shops', currentUser.uid, 'products'), data);
                 document.getElementById('prod-name').value = '';
                 document.getElementById('prod-buy-price').value = '';
                 document.getElementById('prod-price').value = '';
@@ -1339,7 +1341,7 @@
         window.deleteProduct = async function(id) {
             if (!currentUser) return;
             try {
-                await deleteDoc(doc(db, 'products', id));
+                await deleteDoc(doc(db, 'shops', currentUser.uid, 'products', id));
                 showToast("Product deleted");
             } catch (err) { 
                 showToast("Error: " + err.message); 
@@ -1530,13 +1532,13 @@
 
             try {
                 for (const item of cart) {
-                    const productRef = doc(db, 'products', item.id);
+                    const productRef = doc(db, 'shops', currentUser.uid, 'products', item.id);
                     const liveProd = products.find(p => p.id === item.id);
                     const newStock = Math.max(0, liveProd.stock - item.qty);
                     await updateDoc(productRef, { stock: newStock });
                 }
 
-                await addDoc(collection(db, 'sales'), saleData);
+                await addDoc(collection(db, 'shops', currentUser.uid, 'sales'), saleData);
                 
                 if (typeof window.printBluetoothReceipt === "function") {
                     window.printBluetoothReceipt(saleData);
@@ -2051,7 +2053,6 @@
 
             return `🤖 <b>ဆိုင်၏ အချက်အလက်များ မေးမြန်းနိုင်ပါသည်:</b>\n၁။ "ယနေ့ အရောင်းအခြေအနေ"\n၂။ "လက်ကျန်နည်းနေတဲ့ ပစ္စည်းများ"\n၃။ "စုစုပေါင်း အမြတ်ငွေ"\nစသည်ဖြင့် အလွယ်တကူ ရိုက်နှိပ် မေးမြန်းနိုင်ပါသည် ခင်ဗျာ။`;
         }
-
 
     </script>
 </body>
