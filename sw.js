@@ -1,4 +1,5 @@
-const CACHE_NAME = 'sports-pos-v9';
+// Version အသစ် v10 သို့ ပြောင်းထားပါသည် (ဖုန်းများကို Update လုပ်ရန် အချက်ပေးခြင်း)
+const CACHE_NAME = 'sports-pos-v10';
 const APP_SHELL = [
   './',
   './index.html',
@@ -8,10 +9,11 @@ const APP_SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Update အသစ်ကို ချက်ချင်း အသက်သွင်းရန်
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(APP_SHELL);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -21,7 +23,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()) // ဖုန်းများအားလုံးသို့ အသစ်ပြောင်းရန် အမိန့်ပေးခြင်း
   );
 });
 
