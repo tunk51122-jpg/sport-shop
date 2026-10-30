@@ -466,10 +466,10 @@
                                 </div>
                                 <div>
                                     <label class="block text-[11px] md:text-xs font-medium mb-1" id="lbl-sell-price">Sell (Ks)</label>
-                                    <input type="number" id="prod-price" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm" placeholder="0">
+                                    <input type="number" id="prod-price" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] md:text-xs font-medium mb-1" id="lbl-stock">Total Stock</label>
+                                    <label class="block text-[11px] md:text-xs font-medium mb-1 truncate" id="lbl-stock">အရေအတွက်</label>
                                     <input type="number" id="prod-stock" required min="0" class="input-field w-full px-2.5 py-2 rounded-xl text-sm bg-gray-50 dark:bg-gray-800" placeholder="0">
                                 </div>
                             </div>
@@ -494,10 +494,10 @@
                                 </div>
                             </div>
 
-                            <!-- Custom Item Checkbox -->
-                            <div class="flex items-center gap-2 mt-2 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-                                <input type="checkbox" id="prod-is-custom" class="w-4 h-4 text-gray-500 rounded cursor-pointer">
-                                <label for="prod-is-custom" class="text-[11px] md:text-xs font-medium cursor-pointer">Custom Item (Size/Name/Number အလွတ်တောင်းရန်)</label>
+                            <!-- Custom Item Checkbox (Theme-Adaptive Styling) -->
+                            <div class="flex items-center gap-2 mt-2 bg-[var(--bg-color)] p-2.5 rounded-xl border border-[var(--border-color)] text-[var(--text-color)]">
+                                <input type="checkbox" id="prod-is-custom" class="w-4 h-4 text-primary rounded cursor-pointer accent-blue-600">
+                                <label for="prod-is-custom" class="text-[11px] md:text-xs font-medium cursor-pointer opacity-90 select-none">Custom Item (Size/Name/Number အလွတ်တောင်းရန်)</label>
                             </div>
 
                             <button type="submit" class="btn-primary w-full py-2.5 md:py-3 rounded-xl font-medium mt-2 shadow" id="btn-add-product">Add Product</button>
@@ -878,12 +878,9 @@
                         <i class="fas fa-print"></i> <span>Print</span>
                     </button>
                     <button onclick="window.copyVoucherText()" class="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
-                        <i class="fas fa-copy"></i> <span>Copy Text</span>
+                        <i class="fas fa-copy"></i> <span>Copy Voucher</span>
                     </button>
                 </div>
-                <button id="btn-receipt-factory" onclick="window.printFactoryMode()" class="hidden bg-gray-800 text-white w-full py-2.5 rounded-xl font-bold text-sm shadow-sm active:scale-95 transition-transform flex items-center justify-center gap-1.5">
-                    <i class="fas fa-industry"></i> <span>Factory List (စာရိုက်ဆိုင်ပို့ရန်)</span>
-                </button>
                 <button onclick="closeReceipt()" class="w-full bg-gray-100 text-gray-800 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200">
                     ပိတ်မည် (Close)
                 </button>
@@ -1022,7 +1019,7 @@
                 'title-dashboard': 'Dashboard Summary', 'lbl-total-sales': 'Total Sales', 'lbl-total-profit': 'Net Profit', 'lbl-items-sold': 'Products Sold', 'lbl-low-stock': 'Low Stock Alerts',
                 'lbl-chart-sales': 'Sales Trend (Last 7 Days)', 'lbl-chart-category': 'Sales by Category',
                 'title-inventory': 'Inventory Management', 'title-add-product': 'Add New Product', 'lbl-prod-name': 'Product Name', 'lbl-category': 'Category',
-                'lbl-buy-price': 'Buy (Ks)', 'lbl-sell-price': 'Sell (Ks)', 'lbl-stock': 'Stock Qty', 'btn-add-product': 'Add Product',
+                'lbl-buy-price': 'Buy (Ks)', 'lbl-sell-price': 'Sell (Ks)', 'lbl-stock': 'Qty', 'btn-add-product': 'Add Product',
                 'title-prod-list': 'Product List', 'th-name': 'Name', 'th-cat': 'Category', 'th-buy': 'Buy Price', 'th-sell': 'Sell Price', 'th-stock': 'Stock', 'th-actions': 'Actions',
                 'title-history': 'Sales History', 'th-hist-date': 'Date & Time', 'th-hist-items': 'Items Sold', 'th-hist-profit': 'Profit', 'th-hist-total': 'Total', 'th-hist-action': 'Action',
                 'lbl-current-order': 'Current Order', 'lbl-total': 'Total', 'lbl-checkout': 'Checkout', 'title-settings': 'Application Settings',
@@ -1035,7 +1032,7 @@
                 'title-dashboard': 'လုပ်ငန်း စာရင်းချုပ်', 'lbl-total-sales': 'စုစုပေါင်း ရောင်းရငွေ', 'lbl-total-profit': 'အသားတင် အမြတ်ငွေ', 'lbl-items-sold': 'ရောင်းရသည့် အရေအတွက်', 'lbl-low-stock': 'ပစ္စည်းပြတ်လပ်မှု သတိပေးချက်',
                 'lbl-chart-sales': 'ရက်သတ္တပတ်အတွင်း အရောင်းပြမျဉ်း', 'lbl-chart-category': 'အမျိုးအစားအလိုက် ရောင်းရမှု',
                 'title-inventory': 'ကုန်စည် စီမံခန့်ခွဲမှု', 'title-add-product': 'ပစ္စည်းအသစ်ထည့်မည်', 'lbl-prod-name': 'ပစ္စည်းအမည်', 'lbl-category': 'အမျိုးအစား',
-                'lbl-buy-price': 'ဝယ်ရင်း (Ks)', 'lbl-sell-price': 'ရောင်းဈေး (Ks)', 'lbl-stock': 'လက်ကျန်အရေအတွက်', 'btn-add-product': 'ပစ္စည်းထည့်မည်',
+                'lbl-buy-price': 'ဝယ်ရင်း (Ks)', 'lbl-sell-price': 'ရောင်းဈေး (Ks)', 'lbl-stock': 'အရေအတွက်', 'btn-add-product': 'ပစ္စည်းထည့်မည်',
                 'title-prod-list': 'ပစ္စည်းများ စာရင်း', 'th-name': 'အမည်', 'th-cat': 'အမျိုးအစား', 'th-buy': 'ဝယ်ရင်းဈေး', 'th-sell': 'ရောင်းဈေး', 'th-stock': 'လက်ကျန်', 'th-actions': 'လုပ်ဆောင်ချက်',
                 'title-history': 'ယခင် အရောင်းမှတ်တမ်းများ', 'th-hist-date': 'ရက်စွဲနှင့် အချိန်', 'th-hist-items': 'ရောင်းချခဲ့သည့် ပစ္စည်းများ', 'th-hist-profit': 'အမြတ်ငွေ', 'th-hist-total': 'စုစုပေါင်း ကျသင့်ငွေ', 'th-hist-action': 'ဘောက်ချာ',
                 'lbl-current-order': 'လက်ရှိ အရောင်းစာရင်း', 'lbl-total': 'စုစုပေါင်း', 'lbl-checkout': 'ငွေရှင်းမည်', 'title-settings': 'ဆက်တင်များ',
@@ -1941,12 +1938,8 @@
             const content = document.getElementById('receipt-content');
             let dateStr = new Date(saleData.timestamp).toLocaleString();
             let itemsHtml = '';
-            let hasCustomJersey = false;
             
             saleData.items.forEach((item, idx) => {
-                if (item.customNote || saleData.isTeamOrder) {
-                    hasCustomJersey = true;
-                }
                 itemsHtml += `
                     <div class="flex justify-between py-2 text-xs md:text-sm border-b border-gray-100">
                         <div class="pr-2">
@@ -1958,12 +1951,6 @@
                     </div>
                 `;
             });
-
-            // Factory Mode ခလုတ်ကို စာရိုက်ဆိုင်ပို့ရမည့် အင်္ကျီ/အော်ဒါပါမှသာ ပြသရန်
-            const factoryBtn = document.getElementById('btn-receipt-factory');
-            if (factoryBtn) {
-                factoryBtn.classList.toggle('hidden', !hasCustomJersey);
-            }
 
             content.innerHTML = `
                 <div class="text-center mb-4">
@@ -2016,35 +2003,6 @@
                 document.body.removeChild(tempTextArea);
                 showToast("ဘောက်ချာစာသားအား Copy ကူးပြီးပါပြီ!");
             });
-        };
-
-        // FEATURE 1: Factory Print
-        window.printFactoryMode = function() {
-            if(!currentViewingSale) return;
-            const content = document.getElementById('receipt-content');
-            let itemsHtml = '';
-            currentViewingSale.items.forEach(item => {
-                itemsHtml += `
-                    <tr class="border-b border-gray-200">
-                        <td class="py-2 text-sm font-medium pr-2">${item.name}
-                            ${item.customNote ? `<div class="text-xs text-gray-600 mt-1">${item.customNote}</div>` : ''}
-                        </td>
-                        <td class="py-2 text-right text-base font-bold whitespace-nowrap">${item.qty}</td>
-                    </tr>`;
-            });
-
-            content.innerHTML = `
-                <div class="text-center mb-5 border-b-2 border-black pb-3">
-                    <h2 class="text-xl font-bold uppercase tracking-wider">FACTORY ORDER</h2>
-                    <p class="text-sm font-semibold mt-1">${new Date(currentViewingSale.timestamp).toLocaleDateString()}</p>
-                </div>
-                <table class="w-full text-left border-collapse">
-                    <thead><tr class="border-b-2 border-black"><th class="pb-2">Items Detail</th><th class="pb-2 text-right">Qty</th></tr></thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
-                <div class="mt-8 text-center text-xs opacity-50">*** Print output for workshop use ***</div>
-            `;
-            setTimeout(() => window.print(), 100);
         };
 
         window.closeReceipt = function() {
