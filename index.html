@@ -256,43 +256,11 @@
                     <span id="login-btn-text">Login</span>
                 </button>
 
-                <div class="relative flex py-1 items-center">
-                    <div class="flex-grow border-t border-[var(--border-color)]"></div>
-                    <span class="flex-shrink mx-3 text-xs opacity-50">OR</span>
-                    <div class="flex-grow border-t border-[var(--border-color)]"></div>
-                </div>
-
-                <button type="button" id="btn-google-login" class="w-full py-2.5 rounded-xl border border-[var(--border-color)] hover:bg-[var(--border-color)] font-medium text-xs md:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98">
-                    <i class="fab fa-google text-red-500"></i>
-                    <span id="lbl-btn-google">Sign in with Google (Gmail)</span>
-                </button>
-
-                <div class="text-center mt-3">
-                    <p class="text-sm opacity-70">New here? <a href="#" id="show-register" class="text-primary font-medium hover:underline">Create Account</a></p>
-                </div>
-            </form>
-
-            <form id="register-form" class="space-y-4 hidden">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Email</label>
-                    <input type="email" id="reg-email" required class="input-field w-full px-4 py-2.5 rounded-xl" placeholder="admin@shop.com" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Password</label>
-                    <div class="relative">
-                        <input type="password" id="reg-password" required class="input-field w-full px-4 py-2.5 rounded-xl pr-10" placeholder="••••••••" autocomplete="new-password">
-                        <button type="button" onclick="window.togglePasswordVisibility('reg-password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 text-sm focus:outline-none" title="Show/Hide password">
-                            <i class="fas fa-eye" id="toggle-reg-pwd-icon"></i>
-                        </button>
-                    </div>
-                </div>
-                <div id="reg-error-msg" class="hidden text-xs text-red-600 bg-red-50 dark:bg-red-950/40 p-2.5 rounded-xl border border-red-200 dark:border-red-900 leading-relaxed"></div>
-                <button type="submit" id="btn-reg-submit" class="btn-primary w-full py-3 rounded-xl font-medium shadow-md mt-2 flex items-center justify-center gap-2 active:scale-98">
-                    <span id="reg-spinner" class="hidden"><i class="fas fa-spinner fa-spin"></i></span>
-                    <span id="reg-btn-text">Register</span>
-                </button>
-                <div class="text-center mt-3">
-                    <p class="text-sm opacity-70">Already have account? <a href="#" id="show-login" class="text-primary font-medium hover:underline">Login</a></p>
+                <!-- 🌟 Access Notice for Private App -->
+                <div class="text-center mt-3 pt-2 border-t border-[var(--border-color)]">
+                    <p class="text-[11px] opacity-60">
+                        <i class="fas fa-lock mr-1 text-primary"></i> ဤ App သည် သီးသန့်စနစ်ဖြစ်ပြီး ဆိုင်ရှင်ခွင့်ပြုထားသော အကောင့်များသာ Login ဝင်ရောက်နိုင်ပါသည်။
+                    </p>
                 </div>
             </form>
         </div>
@@ -981,7 +949,7 @@
     <!-- Firebase SDK & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -1145,20 +1113,6 @@
             return msg || 'Authentication failed';
         }
 
-        document.getElementById('show-register').addEventListener('click', (e) => {
-            e.preventDefault();
-            clearAuthErrors();
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('register-form').classList.remove('hidden');
-        });
-
-        document.getElementById('show-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            clearAuthErrors();
-            document.getElementById('register-form').classList.add('hidden');
-            document.getElementById('login-form').classList.remove('hidden');
-        });
-
         async function handleLogin() {
             clearAuthErrors();
             const email = (document.getElementById('email').value || '').trim().toLowerCase();
@@ -1189,67 +1143,8 @@
             }
         }
 
-        async function handleRegister() {
-            clearAuthErrors();
-            const email = (document.getElementById('reg-email').value || '').trim().toLowerCase();
-            const password = document.getElementById('reg-password').value || '';
-            const btn = document.getElementById('btn-reg-submit');
-            const spinner = document.getElementById('reg-spinner');
-            const text = document.getElementById('reg-btn-text');
-
-            if (!email || !password) {
-                showAuthError(currentLang === 'mm' ? 'ကျေးဇူးပြု၍ Email နှင့် Password ရိုက်ထည့်ပါ' : 'Please enter email and password', 'register');
-                return;
-            }
-
-            btn.disabled = true;
-            spinner.classList.remove('hidden');
-            text.textContent = currentLang === 'mm' ? 'စာရင်းသွင်းနေသည်...' : 'Registering...';
-
-            try {
-                const userCred = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, 'users', userCred.user.uid), { email: email, role: 'admin' }, { merge: true });
-                showToast(currentLang === 'mm' ? 'အကောင့်ဖွင့်ပြီး ဝင်ရောက်ပြီးပါပြီ!' : 'Account created & logged in!');
-            } catch (error) {
-                console.error('Register Error:', error);
-                showAuthError(getFriendlyAuthError(error), 'register');
-            } finally {
-                btn.disabled = false;
-                spinner.classList.add('hidden');
-                text.textContent = currentLang === 'mm' ? 'စာရင်းသွင်းမည်' : 'Register';
-            }
-        }
-
-        async function handleGoogleLogin() {
-            clearAuthErrors();
-            const btn = document.getElementById('btn-google-login');
-            if (!btn) return;
-            btn.disabled = true;
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Connecting...</span>`;
-
-            try {
-                const provider = new GoogleAuthProvider();
-                provider.setCustomParameters({ prompt: 'select_account' });
-                await signInWithPopup(auth, provider);
-                showToast(currentLang === 'mm' ? 'Google ဖြင့် အောင်မြင်စွာ ဝင်ရောက်ပြီးပါပြီ!' : 'Logged in with Google successfully!');
-            } catch (error) {
-                console.error('Google Login Error:', error);
-                showAuthError(getFriendlyAuthError(error), 'login');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-            }
-        }
-
         const loginFormEl = document.getElementById('login-form');
         if (loginFormEl) loginFormEl.addEventListener('submit', (e) => { e.preventDefault(); handleLogin(); });
-
-        const regFormEl = document.getElementById('register-form');
-        if (regFormEl) regFormEl.addEventListener('submit', (e) => { e.preventDefault(); handleRegister(); });
-
-        const googleLoginBtn = document.getElementById('btn-google-login');
-        if (googleLoginBtn) googleLoginBtn.addEventListener('click', handleGoogleLogin);
 
         document.getElementById('logout-btn').addEventListener('click', signOutAuth);
 
