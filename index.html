@@ -53,6 +53,7 @@
             if (modal) modal.classList.add('hidden');
         });
 
+        // Register Service Worker immediately
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js', { scope: './' })
@@ -61,6 +62,16 @@
                         reg.update();
                     })
                     .catch(err => console.warn('PWA: ServiceWorker error:', err));
+            });
+
+            // 🌟 Live Update Listener: Service Worker အသစ် အသက်ဝင်သည်နှင့် Page ကို အလိုအလျောက် Reload ပြုလုပ်ပေးခြင်း
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    console.log('🔄 New version detected! Reloading page for live update...');
+                    window.location.reload();
+                }
             });
         }
     </script>
