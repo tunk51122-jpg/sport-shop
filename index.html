@@ -878,9 +878,12 @@
                         <i class="fas fa-print"></i> <span>Print</span>
                     </button>
                     <button onclick="window.copyVoucherText()" class="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 py-2.5 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
-                        <i class="fas fa-copy"></i> <span>Copy Voucher</span>
+                        <i class="fas fa-copy"></i> <span>Copy Text</span>
                     </button>
                 </div>
+                <button id="btn-receipt-factory" onclick="window.printFactoryMode()" class="hidden bg-gray-800 text-white w-full py-2.5 rounded-xl font-bold text-sm shadow-sm active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                    <i class="fas fa-industry"></i> <span>Factory List (စာရိုက်ဆိုင်ပို့ရန်)</span>
+                </button>
                 <button onclick="closeReceipt()" class="w-full bg-gray-100 text-gray-800 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200">
                     ပိတ်မည် (Close)
                 </button>
@@ -1938,8 +1941,12 @@
             const content = document.getElementById('receipt-content');
             let dateStr = new Date(saleData.timestamp).toLocaleString();
             let itemsHtml = '';
+            let hasCustomJersey = false;
             
             saleData.items.forEach((item, idx) => {
+                if (item.customNote || saleData.isTeamOrder) {
+                    hasCustomJersey = true;
+                }
                 itemsHtml += `
                     <div class="flex justify-between py-2 text-xs md:text-sm border-b border-gray-100">
                         <div class="pr-2">
@@ -1951,6 +1958,12 @@
                     </div>
                 `;
             });
+
+            // Factory Mode ခလုတ်ကို စာရိုက်ဆိုင်ပို့ရမည့် အင်္ကျီ/အော်ဒါပါမှသာ ပြသရန်
+            const factoryBtn = document.getElementById('btn-receipt-factory');
+            if (factoryBtn) {
+                factoryBtn.classList.toggle('hidden', !hasCustomJersey);
+            }
 
             content.innerHTML = `
                 <div class="text-center mb-4">
@@ -2003,6 +2016,35 @@
                 document.body.removeChild(tempTextArea);
                 showToast("ဘောက်ချာစာသားအား Copy ကူးပြီးပါပြီ!");
             });
+        };
+
+        // FEATURE 1: Factory Print
+        window.printFactoryMode = function() {
+            if(!currentViewingSale) return;
+            const content = document.getElementById('receipt-content');
+            let itemsHtml = '';
+            currentViewingSale.items.forEach(item => {
+                itemsHtml += `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-2 text-sm font-medium pr-2">${item.name}
+                            ${item.customNote ? `<div class="text-xs text-gray-600 mt-1">${item.customNote}</div>` : ''}
+                        </td>
+                        <td class="py-2 text-right text-base font-bold whitespace-nowrap">${item.qty}</td>
+                    </tr>`;
+            });
+
+            content.innerHTML = `
+                <div class="text-center mb-5 border-b-2 border-black pb-3">
+                    <h2 class="text-xl font-bold uppercase tracking-wider">FACTORY ORDER</h2>
+                    <p class="text-sm font-semibold mt-1">${new Date(currentViewingSale.timestamp).toLocaleDateString()}</p>
+                </div>
+                <table class="w-full text-left border-collapse">
+                    <thead><tr class="border-b-2 border-black"><th class="pb-2">Items Detail</th><th class="pb-2 text-right">Qty</th></tr></thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+                <div class="mt-8 text-center text-xs opacity-50">*** Print output for workshop use ***</div>
+            `;
+            setTimeout(() => window.print(), 100);
         };
 
         window.closeReceipt = function() {
